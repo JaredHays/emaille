@@ -1,0 +1,7 @@
+@CHARSET "UTF-8";
+
+svg {
+	display: block;
+	width: 100vw;
+	height: 100vw;
+}
