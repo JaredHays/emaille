@@ -9,8 +9,7 @@ var renderer = null;
 var scene = null;
 var camera = null;
 var canvas = null;
-
-var mouseDown = false;
+var ringColor = null;
 
 var rows = 10;
 var cols = 10;
@@ -25,8 +24,13 @@ var tubularSegments = 100;
 var duration = 5000; // ms
 var currentTime = Date.now();
 
-var mouse = new THREE.Vector2(); 
 var raycaster = new THREE.Raycaster();
+
+var mouse = {
+	down: false,
+	pos: new THREE.Vector2()
+};
+var tool = new Brush();
 
 function run() {
 	requestAnimationFrame(function() {
@@ -39,7 +43,7 @@ function run() {
 }
 
 function getClickedRing() {
-	raycaster.setFromCamera(mouse, camera);
+	raycaster.setFromCamera(mouse.pos, camera);
 	var result = raycaster.intersectObjects(scene.children);
 	if (result.length > 0) {
 		return result[0].object;
@@ -67,6 +71,8 @@ function addNewPairToStack(stack, row, col) {
 $(document).ready(function() {
 	canvas = document.getElementById("canvas");
 	var canvasPos = $(canvas).position();
+	
+	ringColor = $("#ring-color");
 
 	renderer = new THREE.WebGLRenderer({
 		canvas: canvas,
@@ -121,24 +127,30 @@ $(document).ready(function() {
 	scene.add(new THREE.AmbientLight(0xf0f0f0, 0.25));
 
 	canvas.onmousedown = function(e) {
-		mouseDown = true;
-		var clicked = getClickedRing();
-		if(clicked !== null)
-			clicked.material.color = new THREE.Color("white");
+		e.preventDefault();
+		mouse.down = true;
+		console.log(e.button);
+		tool.onMouseDown();
 	}
 	canvas.onmouseup = function(e) {
-		mouseDown = false;
+		e.preventDefault();
+		mouse.down = false;
+		tool.onMouseUp();
 	}
 	canvas.onmousemove = function(e) {
 		e.preventDefault();
-		mouse.x = ((e.clientX - canvasPos.left) / canvas.width) * 2 - 1;
-		mouse.y = -((e.clientY - canvasPos.top) / canvas.height) * 2 + 1;
-		if(mouseDown) {
-			var clicked = getClickedRing();
-			if(clicked !== null)
-				clicked.material.color = new THREE.Color("white");
-		}
+		mouse.pos.x = ((e.clientX - canvasPos.left) / canvas.width) * 2 - 1;
+		mouse.pos.y = -((e.clientY - canvasPos.top) / canvas.height) * 2 + 1;
+		tool.onMouseMove();
 	}
+	canvas.oncontextmenu = function(e) {
+		e.preventDefault();
+//		tool.onMouseDown();
+	}
+	
+	ringColor.change(function() {
+		
+	});
 
 	run();
 });
