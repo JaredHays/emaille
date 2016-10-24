@@ -1,7 +1,15 @@
 @CHARSET "UTF-8";
 
-svg {
+canvas {
 	display: block;
-	width: 100vw;
-	height: 100vw;
+	float: left;
+}
+
+div#control-panel {
+	float: left;
+	margin: 20px;
+}
+
+div#control-panel * {
+	margin: 2px;
 }

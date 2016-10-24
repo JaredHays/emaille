@@ -15,10 +15,18 @@
 </head>
 
 <body>
-	<h1>Maille Draw</h1>
-	<input id="ring-color" type="color" value="#FFFFFF" />
-	<br />
-
 	<canvas id="canvas" width="1080" height="720"></canvas>
+	
+	<div id="control-panel">
+		Units: 
+		<input id="units-in" type="radio" name="units" value="in" checked /><label for="units-in">in.</label>
+		<input id="units-mm" type="radio" name="units" value="mm"><label for="units-mm">mm.</label>
+		<br />
+		<input id="inner-diameter" class="unit-field" type="number" value="0.25" step="0.001" />
+		
+		<br />
+		<input id="ring-color" type="color" value="#FFFFFF" />
+		<br />
+	</div>
 </body>
 </html>

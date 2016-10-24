@@ -16,6 +16,7 @@ var cols = 10;
 
 var rings = [];
 
+var wireCoefficient = 50;
 var radius = 50;
 var tube = 10;
 var radialSegments = 16;
@@ -150,6 +151,20 @@ $(document).ready(function() {
 	
 	ringColor.change(function() {
 		
+	});
+	
+	// Switch unit-based inputs between in. and mm.
+	$("input[name='units'][type='radio']").change(function() {
+		if($(this).val() === "in") {
+			$("input.unit-field").each(function() {
+				$(this).val($(this).val() / 25.4);
+			});
+		}
+		else {
+			$("input.unit-field").each(function() {
+				$(this).val($(this).val() * 25.4);
+			});
+		}
 	});
 
 	run();
