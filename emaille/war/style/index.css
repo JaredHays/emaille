@@ -3,11 +3,13 @@
 canvas {
 	display: block;
 	float: left;
+	width: 78%;
 }
 
 div#control-panel {
 	float: left;
-	margin: 20px;
+	margin: 1%;
+	width: 18%;
 }
 
 div#control-panel * {

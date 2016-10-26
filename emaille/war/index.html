@@ -2,7 +2,7 @@
 
 <html>
 <head>
-<title>Maille Draw</title>
+<title>e-maille</title>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <link rel="stylesheet" type="text/css" href="style/index.css" />
 <script type="text/javascript" src="script/jquery-2.2.3.min.js"></script>
@@ -22,9 +22,13 @@
 		<input id="units-in" type="radio" name="units" value="in" checked /><label for="units-in">in.</label>
 		<input id="units-mm" type="radio" name="units" value="mm"><label for="units-mm">mm.</label>
 		<br />
-		<input id="inner-diameter" class="unit-field" type="number" value="0.25" step="0.001" />
 		
+		<select id="wire-gauge-system"></select><select id="wire-gauge"></select>
 		<br />
+		
+		<label for="inner-diameter">ID: </label><input id="inner-diameter" class="unit-field" type="number" value="0.25" min="0" step="0.001" />
+		<br />
+		
 		<input id="ring-color" type="color" value="#FFFFFF" />
 		<br />
 	</div>
