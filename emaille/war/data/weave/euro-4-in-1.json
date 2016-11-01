@@ -1,18 +1,122 @@
 {
 	"name": "European 4-in-1",
-	"wires": [
+	"sizes": [
 		{
 			"min": 2.9
 		}
 	],
 	"rings": [
 		{
-			"wire": 0,
-			"rotation": 36
+			"size": 0,
+			"rotation": -36,
+			"links": 4,
+			"base": true
 		},
 		{
-			"wire": 0,
-			"rotation": -36
+			"size": 0,
+			"rotation": 36,
+			"links": 4
+		}
+	],
+	"structure": [
+		{
+			"id": "base",
+			"ring": 0,
+			"pos": {"x": 0, "y": 0},
+			"links": [
+				"top-left",
+				"top-right",
+				"bottom-right",
+				"bottom-left"
+			]
+		},
+		{
+			"id": "top-left",
+			"ring": 1,
+			"pos": {"x": -0.7, "y": 1.1},
+			"links": [
+				null,
+				null,
+				"base",
+				"left"
+			]
+		},
+		{
+			"id": "top-right",
+			"ring": 1,
+			"pos": {"x": 0.4, "y": 1.1},
+			"links": [
+				null,
+				null,
+				"right",
+				"base"
+			]
+		},
+		{
+			"id": "bottom-right",
+			"ring": 1,
+			"pos": {"x": 0.4, "y": -1.1},
+			"links": [
+				"base",
+				"right",
+				null,
+				null
+			]
+		},
+		{
+			"id": "bottom-left",
+			"ring": 1,
+			"pos": {"x": -0.7, "y": -1.1},
+			"links": [
+				"left",
+				"base",
+				null,
+				null
+			]
+		},
+		{
+			"id": "left",
+			"ring": 0,
+			"pos": {"x": -1.1, "y": 0},
+			"links": [
+				null,
+				"top-left",
+				"bottom-left",
+				null
+			]
+		},
+		{
+			"id": "right",
+			"ring": 0,
+			"pos": {"x": 1.1, "y": 0},
+			"links": [
+				"top-right",
+				null,
+				null,
+				"bottom-right"
+			]
+		},
+		{
+			"id": "top",
+			"ring": 0,
+			"pos": {"x": 0, "y": 1.1},
+			"links": [
+				null,
+				null,
+				"top-right",
+				"top-left"
+			]
+		},
+		{
+			"id": "bottom",
+			"ring": 0,
+			"pos": {"x": 0, "y": -1.1},
+			"links": [
+				"bottom-left",
+				"bottom-right",
+				null,
+				null
+			]
 		}
 	]
 }

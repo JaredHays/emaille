@@ -15,3 +15,7 @@ div#control-panel {
 div#control-panel * {
 	margin: 2px;
 }
+
+div#control-panel .field-div {
+	width: 100%;
+}

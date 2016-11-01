@@ -191,19 +191,123 @@ function loadStaticData() {
 	}];
 	weaves = [{
 		"name": "European 4-in-1",
-		"wires": [
+		"sizes": [
 			{
 				"min": 2.9
 			}
 		],
 		"rings": [
 			{
-				"wire": 0,
-				"rotation": 36
+				"size": 0,
+				"rotation": -36,
+				"links": 4,
+				"base": true
 			},
 			{
-				"wire": 0,
-				"rotation": -36
+				"size": 0,
+				"rotation": 36,
+				"links": 4
+			}
+		],
+		"structure": [
+			{
+				"id": "base",
+				"ring": 0,
+				"pos": {"x": 0, "y": 0},
+				"links": [
+					"top-left",
+					"top-right",
+					"bottom-right",
+					"bottom-left"
+				]
+			},
+			{
+				"id": "top-left",
+				"ring": 1,
+				"pos": {"x": -0.7, "y": 1.1},
+				"links": [
+					null,
+					null,
+					"base",
+					"left"
+				]
+			},
+			{
+				"id": "top-right",
+				"ring": 1,
+				"pos": {"x": 0.4, "y": 1.1},
+				"links": [
+					null,
+					null,
+					"right",
+					"base"
+				]
+			},
+			{
+				"id": "bottom-right",
+				"ring": 1,
+				"pos": {"x": 0.4, "y": -1.1},
+				"links": [
+					"base",
+					"right",
+					null,
+					null
+				]
+			},
+			{
+				"id": "bottom-left",
+				"ring": 1,
+				"pos": {"x": -0.7, "y": -1.1},
+				"links": [
+					"left",
+					"base",
+					null,
+					null
+				]
+			},
+			{
+				"id": "left",
+				"ring": 0,
+				"pos": {"x": -1.1, "y": 0},
+				"links": [
+					null,
+					"top-left",
+					"bottom-left",
+					null
+				]
+			},
+			{
+				"id": "right",
+				"ring": 0,
+				"pos": {"x": 1.1, "y": 0},
+				"links": [
+					"top-right",
+					null,
+					null,
+					"bottom-right"
+				]
+			},
+			{
+				"id": "top",
+				"ring": 0,
+				"pos": {"x": 0, "y": 1.1},
+				"links": [
+					null,
+					null,
+					"top-right",
+					"top-left"
+				]
+			},
+			{
+				"id": "bottom",
+				"ring": 0,
+				"pos": {"x": 0, "y": -1.1},
+				"links": [
+					"bottom-left",
+					"bottom-right",
+					null,
+					null
+				]
 			}
 		]
 	}];
@@ -221,11 +325,172 @@ function createRing(baseGeometry, baseMaterial) {
 	ring.mesh = new THREE.Mesh(baseGeometry, baseMaterial.clone());
 	ring.mesh.position.z = -50;
 	ring.updated = false;
-	ring.links = [];	
+	ring.links = [null, null, null, null];	
 	
 	scene.add(ring.mesh);
 	
 	return ring;
+}
+
+function linkRings(currentRing, frustum, full_radius) {
+	currentRing.mesh.updateMatrixWorld();
+	if(!frustum.intersectsObject(currentRing.mesh)) {
+		return;
+	}
+	
+	var x = currentRing.mesh.position.x;
+	var y = currentRing.mesh.position.y;
+	
+	// Go through to fill in missing flags
+	// TL present, TR missing
+	if(currentRing.links[0] && !currentRing.links[1] && currentRing.links[0].links[1]) {
+		currentRing.links[1] = currentRing.links[0].links[1].links[2];
+	}
+	// TR present, TL missing
+	if(currentRing.links[1] && !currentRing.links[0] && currentRing.links[1].links[0]) {
+		currentRing.links[0] = currentRing.links[1].links[0].links[3];
+	}
+	// TR present, BR missing
+	if(currentRing.links[1] && !currentRing.links[2] && currentRing.links[1].links[2]) {
+		currentRing.links[2] = currentRing.links[1].links[2].links[3];
+	}
+	// BR present, TR missing
+	if(currentRing.links[2] && !currentRing.links[1] && currentRing.links[2].links[1]) {
+		currentRing.links[1] = currentRing.links[2].links[1].links[0];
+	}
+	// BR present, BL missing
+	if(currentRing.links[2] && !currentRing.links[3] && currentRing.links[2].links[3]) {
+		currentRing.links[3] = currentRing.links[2].links[3].links[0];
+	}
+	// BL present, BR missing
+	if(currentRing.links[3] && !currentRing.links[2] && currentRing.links[3].links[2]) {
+		currentRing.links[2] = currentRing.links[3].links[2].links[1];
+	}
+	// BL present, TL missing
+	if(currentRing.links[3] && !currentRing.links[0] && currentRing.links[3].links[0]) {
+		currentRing.links[0] = currentRing.links[3].links[0].links[1];
+	}
+	// TL present, BL missing
+ 	if(currentRing.links[0] && !currentRing.links[3] && currentRing.links[0].links[3]) {
+		currentRing.links[3] = currentRing.links[0].links[3].links[2];
+	} 
+	
+	var flags = currentRing.links.map(function(x) {return !!x;});
+	
+ 	// Top left
+	if(!flags[0]) {
+		var ring0 = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		x = currentRing.mesh.position.x;
+		y = currentRing.mesh.position.y;
+		x -= full_radius * 0.7;
+		y += full_radius * 1.1;
+		ring0.mesh.position.x = x;
+		ring0.mesh.position.y = y;
+		ring0.mesh.rotation.y = THREE.Math.degToRad(36);
+		currentRing.links[0] = ring0;
+		ring0.links[2] = currentRing;
+	}		
+	// Top right
+	if(!flags[1]) {
+		var ring1 = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		x = currentRing.mesh.position.x;
+		y = currentRing.mesh.position.y;
+		x += full_radius * 0.4;
+		y += full_radius * 1.1;
+		ring1.mesh.position.x = x;
+		ring1.mesh.position.y = y;
+		ring1.mesh.rotation.y = THREE.Math.degToRad(36);
+		currentRing.links[1] = ring1;
+		ring1.links[3] = currentRing;
+	}
+	// Bottom right
+	if(!flags[2]) {
+		var ring2 = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		x = currentRing.mesh.position.x;
+		y = currentRing.mesh.position.y;
+		x += full_radius * 0.4;
+		y -= full_radius * 1.1;
+		ring2.mesh.position.x = x;
+		ring2.mesh.position.y = y;
+		ring2.mesh.rotation.y = THREE.Math.degToRad(36);
+		currentRing.links[2] = ring2;
+		ring2.links[0] = currentRing;
+	}
+	// Bottom left
+	if(!flags[3]) {
+		var ring3 = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		x = currentRing.mesh.position.x;
+		y = currentRing.mesh.position.y;
+		x -= full_radius * 0.7;
+		y -= full_radius * 1.1;
+		ring3.mesh.position.x = x;
+		ring3.mesh.position.y = y;
+		ring3.mesh.rotation.y = THREE.Math.degToRad(36);
+		currentRing.links[3] = ring3;
+		ring3.links[1] = currentRing;
+	}	 
+	
+	var newRing = null;
+	x = currentRing.mesh.position.x;
+	y = currentRing.mesh.position.y;
+	
+	// Right
+	if(!flags[1] || !flags[2]) {
+		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		x += full_radius * 1.1;
+		newRing.mesh.position.x = x;
+		newRing.mesh.position.y = y;
+		newRing.mesh.rotation.y = THREE.Math.degToRad(-36);
+		newRing.links[0] = currentRing.links[1];
+		newRing.links[3] = currentRing.links[2];
+		currentRing.links[1].links[2] = newRing;
+		currentRing.links[2].links[1] = newRing;
+		linkRings(newRing, frustum, full_radius);
+	}
+ 	// Left
+ 	if(!flags[0] || !flags[3]) {			
+		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		x = currentRing.mesh.position.x;
+		x -= full_radius * 1.1;
+		newRing.mesh.position.x = x;
+		newRing.mesh.position.y = y;
+		newRing.mesh.rotation.y = THREE.Math.degToRad(-36);
+		newRing.links[1] = currentRing.links[0];
+		newRing.links[2] = currentRing.links[3];
+		currentRing.links[0].links[3] = newRing;
+		currentRing.links[3].links[0] = newRing;
+		linkRings(newRing, frustum, full_radius);
+	}
+	// Top
+	if(!flags[0] && !flags[1]) {
+		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		x = currentRing.mesh.position.x;
+		y += full_radius * 1.1;
+		y += full_radius * 1.1;
+		newRing.mesh.position.x = x;
+		newRing.mesh.position.y = y;
+		newRing.mesh.rotation.y = THREE.Math.degToRad(-36);
+		newRing.links[3] = currentRing.links[0];
+		newRing.links[2] = currentRing.links[1];
+		currentRing.links[0].links[1] = newRing;
+		currentRing.links[1].links[0] = newRing;
+		linkRings(newRing, frustum, full_radius);
+	}
+	// Bottom
+	if(!flags[2] && !flags[3]) {
+		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		y = currentRing.mesh.position.y;
+		y -= full_radius * 1.1;
+		y -= full_radius * 1.1;
+		newRing.mesh.position.x = x;
+		newRing.mesh.position.y = y;
+		newRing.mesh.rotation.y = THREE.Math.degToRad(-36);
+		newRing.links[0] = currentRing.links[3];
+		newRing.links[1] = currentRing.links[2];
+		currentRing.links[3].links[2] = newRing;
+		currentRing.links[2].links[3] = newRing;
+		linkRings(newRing, frustum, full_radius); 
+	} 
 }
 
 function createRings() {
@@ -254,45 +519,27 @@ function createRings() {
 	var material = new THREE.MeshStandardMaterial({
 				color: "magenta"//j >= rings[i].length || rings[i][j] === null ? "magenta" : rings[i][j].material.color
 			});
-	// var ring = {};
-	// ring.mesh = new THREE.Mesh(geometry, material.clone());
-	// ring.updated = false;
-	// scene.add(ring.mesh);
-	// ring.mesh.position.x = x;
-	// ring.mesh.position.y = y;
-	// ring.mesh.position.z = -50;
-	// ring.mesh.rotation.y = THREE.Math.degToRad(-36);
 	
-	var ring0 = createRing(geometry, material);
-	ring0.mesh.position.x = x;
-	ring0.mesh.position.y = y;
-	ring0.mesh.rotation.y = THREE.Math.degToRad(-36);
+	var currentRing = createRing(geometry, material);
+	currentRing.mesh.position.x = x;
+	currentRing.mesh.position.y = y;
+	currentRing.mesh.rotation.y = THREE.Math.degToRad(-36);
 	
-	head = ring0;
+	head = currentRing;
 	
-	var ring1 = createRing(geometry, material);
-	y += full_radius * 1.1;
-	x -= full_radius * 0.4;
-	ring1.mesh.position.x = x;
-	ring1.mesh.position.y = y;
-	ring1.mesh.rotation.y = THREE.Math.degToRad(36);
-	var ring2 = createRing(geometry, material);
-	x += full_radius * 0.8;
-	ring2.mesh.position.x = x;
-	ring2.mesh.position.y = y;
-	ring2.mesh.rotation.y = THREE.Math.degToRad(36);
-	var ring3 = createRing(geometry, material);
-	y -= full_radius * 1.1;	
-	y -= full_radius * 1.1;
-	ring3.mesh.position.x = x;
-	ring3.mesh.position.y = y;
-	ring3.mesh.rotation.y = THREE.Math.degToRad(36);
-	var ring4 = createRing(geometry, material);
-	x -= full_radius * 0.8;
-	ring4.mesh.position.x = x;
-	ring4.mesh.position.y = y;
-	ring4.mesh.rotation.y = THREE.Math.degToRad(36);
+	// Setup for the in-camera test
+	var frustum = new THREE.Frustum();
+	// var cameraViewProjectionMatrix = new THREE.Matrix4();
+
+	// make sure the camera matrix is updated
+	camera.updateMatrixWorld(); 
+	// camera.matrixWorldInverse.getInverse(camera.matrixWorld);
+	// cameraViewProjectionMatrix.multiplyMatrices();
+	frustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 	
+	linkRings(currentRing, frustum, full_radius);
+	
+	console.log(scene.children.length);
 	// var ring2 = {};
 	// ring2.mesh = new THREE.Mesh(geometry, material.clone());
 	// ring2.updated = false;
@@ -350,6 +597,66 @@ function createRings() {
 	console.log(t1 - t0);
 }
 
+function updateRing(currentRing, geometry) {
+	if(currentRing.updated)
+		return;
+	
+	currentRing.mesh.geometry = geometry;
+	currentRing.mesh.geometry.dynamic = true;
+	currentRing.mesh.geometry.verticesNeedUpdate = true;
+	
+	currentRing.updated = true;
+	
+	for(var i = 0; i < currentRing.links.length; i++) {
+		if(currentRing.links[i])
+			updateRing(currentRing.links[i], geometry);
+	}
+}
+
+function updateRings() {
+	// No rings to update, create rings
+	if(head == null) {
+		createRings();
+		return;
+	}
+	
+	var currentRing = head;
+	var oldRadius = radius;
+	var oldTube = tube;
+	radius = $("#inner-diameter").val() * scale / 2;
+	tube = getSelectedWireGauge()[units] * scale;
+	if(oldRadius === radius && oldTube === tube)
+		return;
+	
+	var full_radius = radius + (tube / 2);
+	var base_x = 0;//canvas.width / -2 + full_radius + (tube / 2);
+	var base_y = 0;//canvas.height / 2 - (full_radius + (tube / 2));
+	var x = base_x;
+	var y = base_y;
+	
+ 	var geometry = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
+	
+	updateRing(currentRing, geometry);
+	
+	resetRingFlag(currentRing);
+}
+
+function resetRingFlag(currentRing) {
+	if(!currentRing.updated)
+		return;
+	
+	currentRing.updated = false;
+	
+	for(var i = 0; i < currentRing.links.length; i++) {
+		if(currentRing.links[i])
+			resetRingFlag(currentRing.links[i]);
+	}
+}
+
+function getSelectedWireGauge() {
+	return wireGauges[$("#wire-gauge-system").val()]["sizes"][$("#wire-gauge").val()];
+}
+
 function createWireGaugeList(systemName) {
 	var system = wireGauges[systemName];
 	var gaugeList = $("#wire-gauge");
@@ -358,6 +665,10 @@ function createWireGaugeList(systemName) {
 	for(var gauge in system["sizes"]) {
 		gaugeList.append("<option value='" + gauge + "'" + (gauge == selectedGauge ? "selected" : "") + ">" + gauge + " - " + system["sizes"][gauge][units] + " " + units + ".</option>");
 	}
+}
+
+function updateAR() {
+	$("#aspect-ratio").val($("#inner-diameter").val() / getSelectedWireGauge()[units]);
 }
 
 $(document).ready(function() {
@@ -415,11 +726,18 @@ $(document).ready(function() {
 	});
 	
 	$("#wire-gauge").change(function() {
-		createRings();
+		updateAR();
+		updateRings();
 	});
 	
 	$("#inner-diameter").change(function() {
-		createRings();
+		updateAR();
+		updateRings();
+	});
+	
+	$("#aspect-ratio").change(function() {
+		$("#inner-diameter").val($(this).val() * getSelectedWireGauge()[units]);
+		updateRings();
 	});
 	
 	// Switch unit-based inputs between in. and mm.
@@ -441,6 +759,7 @@ $(document).ready(function() {
 	});
 	
 	loadStaticData();
+	
 
 	run();
 });
