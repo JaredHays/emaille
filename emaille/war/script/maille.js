@@ -16,6 +16,8 @@ var units = "in";
 var wireGauges = {};
 var weaves = {};
 
+var weave = null;
+
 var rows = 10;
 var cols = 10;
 
@@ -80,6 +82,137 @@ function loadStaticData() {
 			// weaves = data;
 		// }
 	// });
+	var data = [{
+		"name": "European 4-in-1",
+		"sizes": [
+			{
+				"min": 2.9
+			}
+		],
+		"rings": [
+			{
+				"size": 0,
+				"rotation": -36,
+				"links": 4,
+				"base": true
+			},
+			{
+				"size": 0,
+				"rotation": 36,
+				"links": 4
+			}
+		],
+		"structure": {
+			"base": {
+				"id": "base",
+				"ring": 0,
+				"pos": {"x": 0, "y": 0},
+				"links": [
+					"top-left",
+					"top-right",
+					"bottom-right",
+					"bottom-left"
+				]
+			},
+			"top-left": {
+				"id": "top-left",
+				"ring": 1,
+				"pos": {"x": -0.7, "y": 1.1},
+				"links": [
+					null,
+					null,
+					"base",
+					"left"
+				]
+			},
+			"top-right": {
+				"id": "top-right",
+				"ring": 1,
+				"pos": {"x": 0.4, "y": 1.1},
+				"links": [
+					null,
+					null,
+					"right",
+					"base"
+				]
+			},
+			"bottom-right": {
+				"id": "bottom-right",
+				"ring": 1,
+				"pos": {"x": 0.4, "y": -1.1},
+				"links": [
+					"base",
+					"right",
+					null,
+					null
+				]
+			},
+			"bottom-left": {
+				"id": "bottom-left",
+				"ring": 1,
+				"pos": {"x": -0.7, "y": -1.1},
+				"links": [
+					"left",
+					"base",
+					null,
+					null
+				]
+			},
+			"left": {
+				"id": "left",
+				"ring": 0,
+				"pos": {"x": -1.1, "y": 0},
+				"links": [
+					null,
+					"top-left",
+					"bottom-left",
+					null
+				]
+			},
+			"right": {
+				"id": "right",
+				"ring": 0,
+				"pos": {"x": 1.1, "y": 0},
+				"links": [
+					"top-right",
+					null,
+					null,
+					"bottom-right"
+				]
+			},
+			"top": {
+				"id": "top",
+				"ring": 0,
+				"pos": {"x": 0, "y": 1.1},
+				"links": [
+					null,
+					null,
+					"top-right",
+					"top-left"
+				]
+			},
+			"bottom": {
+				"id": "bottom",
+				"ring": 0,
+				"pos": {"x": 0, "y": -1.1},
+				"links": [
+					"bottom-left",
+					"bottom-right",
+					null,
+					null
+				]
+			}
+		}
+	}];
+	
+	var weaveList = $("#weave");
+	for(var i = 0; i < data.length; i++) {
+		var weave = data[i];
+		weaves[weave.name] = weave;
+		weaveList.append("<option value='" + weave.name + "'>" + weave.name + "</option>");
+	}
+	weaveList.change();
+	
 	data = [{
 		"name": "AWG",
 		"sizes": {
@@ -189,128 +322,6 @@ function loadStaticData() {
 			}
 		}
 	}];
-	weaves = [{
-		"name": "European 4-in-1",
-		"sizes": [
-			{
-				"min": 2.9
-			}
-		],
-		"rings": [
-			{
-				"size": 0,
-				"rotation": -36,
-				"links": 4,
-				"base": true
-			},
-			{
-				"size": 0,
-				"rotation": 36,
-				"links": 4
-			}
-		],
-		"structure": [
-			{
-				"id": "base",
-				"ring": 0,
-				"pos": {"x": 0, "y": 0},
-				"links": [
-					"top-left",
-					"top-right",
-					"bottom-right",
-					"bottom-left"
-				]
-			},
-			{
-				"id": "top-left",
-				"ring": 1,
-				"pos": {"x": -0.7, "y": 1.1},
-				"links": [
-					null,
-					null,
-					"base",
-					"left"
-				]
-			},
-			{
-				"id": "top-right",
-				"ring": 1,
-				"pos": {"x": 0.4, "y": 1.1},
-				"links": [
-					null,
-					null,
-					"right",
-					"base"
-				]
-			},
-			{
-				"id": "bottom-right",
-				"ring": 1,
-				"pos": {"x": 0.4, "y": -1.1},
-				"links": [
-					"base",
-					"right",
-					null,
-					null
-				]
-			},
-			{
-				"id": "bottom-left",
-				"ring": 1,
-				"pos": {"x": -0.7, "y": -1.1},
-				"links": [
-					"left",
-					"base",
-					null,
-					null
-				]
-			},
-			{
-				"id": "left",
-				"ring": 0,
-				"pos": {"x": -1.1, "y": 0},
-				"links": [
-					null,
-					"top-left",
-					"bottom-left",
-					null
-				]
-			},
-			{
-				"id": "right",
-				"ring": 0,
-				"pos": {"x": 1.1, "y": 0},
-				"links": [
-					"top-right",
-					null,
-					null,
-					"bottom-right"
-				]
-			},
-			{
-				"id": "top",
-				"ring": 0,
-				"pos": {"x": 0, "y": 1.1},
-				"links": [
-					null,
-					null,
-					"top-right",
-					"top-left"
-				]
-			},
-			{
-				"id": "bottom",
-				"ring": 0,
-				"pos": {"x": 0, "y": -1.1},
-				"links": [
-					"bottom-left",
-					"bottom-right",
-					null,
-					null
-				]
-			}
-		]
-	}];
 	var systemList = $("#wire-gauge-system");
 	for(var i = 0; i < data.length; i++) {
 		var system = data[i];
@@ -320,17 +331,22 @@ function loadStaticData() {
 	systemList.change();
 }
 
-function createRing(baseGeometry, baseMaterial) {
+function createRing(baseGeometry, baseMaterial, ringID, basePos) {
+	var ringIndex = weaves[weave]["structure"][ringID]["ring"];
 	var ring = {};
 	ring.mesh = new THREE.Mesh(baseGeometry, baseMaterial.clone());
 	ring.mesh.position.z = -50;
+	ring.mesh.rotation.y = THREE.Math.degToRad(weaves[weave]["rings"][ringIndex]["rotation"]);
 	ring.updated = false;
-	ring.links = [null, null, null, null];	
+	ring.links = new Array(weaves[weave]["rings"][ringIndex]["links"]);	
+	ring.ringID = ringID;
 	
 	scene.add(ring.mesh);
 	
 	return ring;
 }
+
+// TODO: change createRing to Ring constructor
 
 function linkRings(currentRing, frustum, full_radius) {
 	currentRing.mesh.updateMatrixWorld();
@@ -340,6 +356,7 @@ function linkRings(currentRing, frustum, full_radius) {
 	
 	var x = currentRing.mesh.position.x;
 	var y = currentRing.mesh.position.y;
+	var ringIndex = 0;
 	
 	// Go through to fill in missing flags
 	// TL present, TR missing
@@ -379,53 +396,52 @@ function linkRings(currentRing, frustum, full_radius) {
 	
  	// Top left
 	if(!flags[0]) {
-		var ring0 = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		var ring0 = createRing(currentRing.mesh.geometry, currentRing.mesh.material, "top-left", currentRing.mesh.position);
 		x = currentRing.mesh.position.x;
 		y = currentRing.mesh.position.y;
 		x -= full_radius * 0.7;
 		y += full_radius * 1.1;
 		ring0.mesh.position.x = x;
 		ring0.mesh.position.y = y;
-		ring0.mesh.rotation.y = THREE.Math.degToRad(36);
 		currentRing.links[0] = ring0;
 		ring0.links[2] = currentRing;
 	}		
 	// Top right
 	if(!flags[1]) {
-		var ring1 = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		ringIndex = 1;
+		var ring1 = createRing(currentRing.mesh.geometry, currentRing.mesh.material, "top-right", currentRing.mesh.position);
 		x = currentRing.mesh.position.x;
 		y = currentRing.mesh.position.y;
 		x += full_radius * 0.4;
 		y += full_radius * 1.1;
 		ring1.mesh.position.x = x;
 		ring1.mesh.position.y = y;
-		ring1.mesh.rotation.y = THREE.Math.degToRad(36);
 		currentRing.links[1] = ring1;
 		ring1.links[3] = currentRing;
 	}
 	// Bottom right
 	if(!flags[2]) {
-		var ring2 = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		ringIndex = 1;
+		var ring2 = createRing(currentRing.mesh.geometry, currentRing.mesh.material, "bottom-right", currentRing.mesh.position);
 		x = currentRing.mesh.position.x;
 		y = currentRing.mesh.position.y;
 		x += full_radius * 0.4;
 		y -= full_radius * 1.1;
 		ring2.mesh.position.x = x;
 		ring2.mesh.position.y = y;
-		ring2.mesh.rotation.y = THREE.Math.degToRad(36);
 		currentRing.links[2] = ring2;
 		ring2.links[0] = currentRing;
 	}
 	// Bottom left
 	if(!flags[3]) {
-		var ring3 = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		ringIndex = 1;
+		var ring3 = createRing(currentRing.mesh.geometry, currentRing.mesh.material, "bottom-left", currentRing.mesh.position);
 		x = currentRing.mesh.position.x;
 		y = currentRing.mesh.position.y;
 		x -= full_radius * 0.7;
 		y -= full_radius * 1.1;
 		ring3.mesh.position.x = x;
 		ring3.mesh.position.y = y;
-		ring3.mesh.rotation.y = THREE.Math.degToRad(36);
 		currentRing.links[3] = ring3;
 		ring3.links[1] = currentRing;
 	}	 
@@ -433,14 +449,14 @@ function linkRings(currentRing, frustum, full_radius) {
 	var newRing = null;
 	x = currentRing.mesh.position.x;
 	y = currentRing.mesh.position.y;
+	ringIndex = 0;
 	
 	// Right
 	if(!flags[1] || !flags[2]) {
-		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material, "right", currentRing.mesh.position);
 		x += full_radius * 1.1;
 		newRing.mesh.position.x = x;
 		newRing.mesh.position.y = y;
-		newRing.mesh.rotation.y = THREE.Math.degToRad(-36);
 		newRing.links[0] = currentRing.links[1];
 		newRing.links[3] = currentRing.links[2];
 		currentRing.links[1].links[2] = newRing;
@@ -449,12 +465,11 @@ function linkRings(currentRing, frustum, full_radius) {
 	}
  	// Left
  	if(!flags[0] || !flags[3]) {			
-		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material, "left", currentRing.mesh.position);
 		x = currentRing.mesh.position.x;
 		x -= full_radius * 1.1;
 		newRing.mesh.position.x = x;
 		newRing.mesh.position.y = y;
-		newRing.mesh.rotation.y = THREE.Math.degToRad(-36);
 		newRing.links[1] = currentRing.links[0];
 		newRing.links[2] = currentRing.links[3];
 		currentRing.links[0].links[3] = newRing;
@@ -463,13 +478,12 @@ function linkRings(currentRing, frustum, full_radius) {
 	}
 	// Top
 	if(!flags[0] && !flags[1]) {
-		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material, "top", currentRing.mesh.position);
 		x = currentRing.mesh.position.x;
 		y += full_radius * 1.1;
 		y += full_radius * 1.1;
 		newRing.mesh.position.x = x;
 		newRing.mesh.position.y = y;
-		newRing.mesh.rotation.y = THREE.Math.degToRad(-36);
 		newRing.links[3] = currentRing.links[0];
 		newRing.links[2] = currentRing.links[1];
 		currentRing.links[0].links[1] = newRing;
@@ -478,13 +492,12 @@ function linkRings(currentRing, frustum, full_radius) {
 	}
 	// Bottom
 	if(!flags[2] && !flags[3]) {
-		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material);
+		newRing = createRing(currentRing.mesh.geometry, currentRing.mesh.material, "bottom", currentRing.mesh.position);
 		y = currentRing.mesh.position.y;
 		y -= full_radius * 1.1;
 		y -= full_radius * 1.1;
 		newRing.mesh.position.x = x;
 		newRing.mesh.position.y = y;
-		newRing.mesh.rotation.y = THREE.Math.degToRad(-36);
 		newRing.links[0] = currentRing.links[3];
 		newRing.links[1] = currentRing.links[2];
 		currentRing.links[3].links[2] = newRing;
@@ -520,10 +533,9 @@ function createRings() {
 				color: "magenta"//j >= rings[i].length || rings[i][j] === null ? "magenta" : rings[i][j].material.color
 			});
 	
-	var currentRing = createRing(geometry, material);
+	var currentRing = createRing(geometry, material, "base", new THREE.Vector3(0, 0, 0));
 	currentRing.mesh.position.x = x;
 	currentRing.mesh.position.y = y;
-	currentRing.mesh.rotation.y = THREE.Math.degToRad(-36);
 	
 	head = currentRing;
 	
@@ -728,6 +740,10 @@ $(document).ready(function() {
 	$("#wire-gauge").change(function() {
 		updateAR();
 		updateRings();
+	});
+	
+	$("#weave").change(function() {
+		weave = $(this).val();
 	});
 	
 	$("#inner-diameter").change(function() {

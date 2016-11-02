@@ -13,9 +13,18 @@ div#control-panel {
 }
 
 div#control-panel * {
-	margin: 2px;
+	margin-top: 2px;
+	margin-right: 2px;
+	margin-bottom: 2px;
 }
 
 div#control-panel .field-div {
 	width: 100%;
+}
+
+div#control-panel .field-div label {
+	text-align: right;
+	width: 25px;
+	display: inline-block;
+	padding-right: 5px;
 }
