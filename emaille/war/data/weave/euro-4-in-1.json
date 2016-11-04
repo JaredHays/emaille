@@ -36,7 +36,7 @@
 			"pos": {"x": -0.7, "y": 1.1},
 			"links": [
 				null,
-				null,
+				"top",
 				"base",
 				"left"
 			]
@@ -46,7 +46,7 @@
 			"ring": 1,
 			"pos": {"x": 0.4, "y": 1.1},
 			"links": [
-				null,
+				"top",
 				null,
 				"right",
 				"base"
@@ -60,7 +60,7 @@
 				"base",
 				"right",
 				null,
-				null
+				"bottom"
 			]
 		},
 		"bottom-left": {
@@ -70,7 +70,7 @@
 			"links": [
 				"left",
 				"base",
-				null,
+				"bottom",
 				null
 			]
 		},
@@ -99,7 +99,7 @@
 		"top": {
 			"id": "top",
 			"ring": 0,
-			"pos": {"x": 0, "y": 1.1},
+			"pos": {"x": 0, "y": 2.2},
 			"links": [
 				null,
 				null,
@@ -110,7 +110,7 @@
 		"bottom": {
 			"id": "bottom",
 			"ring": 0,
-			"pos": {"x": 0, "y": -1.1},
+			"pos": {"x": 0, "y": -2.2},
 			"links": [
 				"bottom-left",
 				"bottom-right",
