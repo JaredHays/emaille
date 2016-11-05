@@ -20,6 +20,9 @@ var weaves = {};
 
 var weave = null;
 
+var geometries = [];
+var baseMaterial = new THREE.MeshStandardMaterial({color: "magenta"});
+
 var rows = 10;
 var cols = 10;
 
@@ -333,18 +336,19 @@ function loadStaticData() {
 	systemList.change();
 }
 
-function Ring(baseGeometry, baseMaterial, ringID, basePos) {
-	this.ringIndex = weaves[weave]["structure"][ringID]["ring"];
-	this.mesh = new THREE.Mesh(baseGeometry, baseMaterial.clone());
+function Ring(ringID, basePos) {
+	this.ringIndex = weave["structure"][ringID]["ring"];
+	var ringData = weave["rings"][this.ringIndex];
+	this.mesh = new THREE.Mesh(geometries[ringData["size"]], baseMaterial.clone());
 	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
-	// if(basePos)
-		// this.mesh.position = basePos;
-	this.mesh.position.x = (basePos ? basePos.x : 0) + (full_radius * weaves[weave]["structure"][ringID]["pos"].x);
-	this.mesh.position.y = (basePos ? basePos.y : 0) + (full_radius * weaves[weave]["structure"][ringID]["pos"].y);
+	if(basePos)
+		 this.mesh.position.copy(basePos);
+	this.mesh.position.x += full_radius * weave["structure"][ringID]["pos"].x;
+	this.mesh.position.y += full_radius * weave["structure"][ringID]["pos"].y;
 	this.mesh.position.z = -50;
-	this.mesh.rotation.y = THREE.Math.degToRad(weaves[weave]["rings"][this.ringIndex]["rotation"]);
+	this.mesh.rotation.y = THREE.Math.degToRad(weave["rings"][this.ringIndex]["rotation"]);
 	this.updated = false;
-	this.links = new Array(weaves[weave]["rings"][this.ringIndex]["links"]);	
+	this.links = new Array(weave["rings"][this.ringIndex]["links"]);	
 	this.ringID = ringID;
 	
 	this.isInCamera = function(frustum) {
@@ -359,32 +363,33 @@ function Ring(baseGeometry, baseMaterial, ringID, basePos) {
 	scene.add(this.mesh);
 }
 
-function linkRings(currentRing, frustum, kill) {
+function linkRings(currentRing, frustum) {
 	// Stop once current ring is no longer visible on the canvas
 	currentRing.mesh.updateMatrixWorld();
 	if(!currentRing.isInCamera(frustum)) {
 		return;
 	}
 	
-	var structure = weaves[weave]["structure"];
+	var structure = weave["structure"];
 	// TODO: refactor out "base"
 	var baseID = "base";
 	currentRing.ringID = baseID;
 	
 	// Populate ring map with existing rings
 	var rings = {"base": currentRing};
-	var flag = true;
-	while(flag) {
-		flag = false;
+	var addedNewRing = true;
+	while(addedNewRing) {
+		addedNewRing = false;
 		for(var ringID in rings) {
 			for(var i = 0; i < rings[ringID].links.length; i++) {
-				if(rings[ringID].links[i]) {
+				var linkedRing = rings[ringID].links[i];
+				if(linkedRing) {
 					// Update ring ID for current base
-					rings[ringID].links[i].ringID = structure[ringID]["links"][i];
+					linkedRing.ringID = structure[ringID]["links"][i];
 					// Add ring to map
-					if(rings[ringID].links[i].ringID && !(rings[ringID].links[i].ringID in rings)) {
-						rings[rings[ringID].links[i].ringID] = rings[ringID].links[i];
-						flag = true;
+					if(linkedRing.ringID && !(linkedRing.ringID in rings)) {
+						rings[linkedRing.ringID] = linkedRing;
+						addedNewRing = true;
 					}
 				}
 			}
@@ -393,39 +398,44 @@ function linkRings(currentRing, frustum, kill) {
 	// Establish any missing links
 	for(var ringID in rings) {
 		for(var i = 0; i < rings[ringID].links.length; i++) {
-			if(!rings[ringID].links[i] && structure[ringID]["links"][i] in rings) {
-				rings[ringID].links[i] = rings[structure[ringID]["links"][i]];
+			var linkedRingID = structure[ringID]["links"][i];
+			// Found the ring that should be in links[i]
+			if(!rings[ringID].links[i] && linkedRingID in rings) {
+				rings[ringID].links[i] = rings[linkedRingID];
 			}
 		}
 	}
 	
-	flag = false;
+	addedNewRing = false;
 	
 	// Search for rings that need to be created
 	for(var ringID in structure) {
 		// Ring missing from current set
 		if(!(ringID in rings)) {
-			var ring = new Ring(currentRing.mesh.geometry, currentRing.mesh.material, ringID, currentRing.mesh.position);
+			var ring = new Ring(ringID, currentRing.mesh.position);
 			rings[ringID] = ring;
-			flag = true;
+			addedNewRing = true;
 		}
 	}
 	// Establish any missing links
 	for(var ringID in rings) {
 		for(var i = 0; i < rings[ringID].links.length; i++) {
-			if(!rings[ringID].links[i] && structure[ringID]["links"][i] in rings) {
-				rings[ringID].links[i] = rings[structure[ringID]["links"][i]];
+			var linkedRingID = structure[ringID]["links"][i];
+			// Found the ring that should be in links[i]
+			if(!rings[ringID].links[i] && linkedRingID in rings) {
+				rings[ringID].links[i] = rings[linkedRingID];
 			}
 		}
 	}
 	
 	// Don't recurse if no new rings were added this pass
-	if(!flag)
+	if(!addedNewRing)
 		return;
 	
 	// Find new base rings and recurse
 	for(var ringID in rings) {		
-		if(ringID != baseID && weaves[weave]["rings"][structure[ringID]["ring"]].base) {
+		var ringIndex = structure[ringID]["ring"];
+		if(ringID != baseID && weave["rings"][ringIndex].base) {
 			linkRings(rings[ringID], frustum);
 		}
 	}
@@ -453,12 +463,11 @@ function createRings() {
 	var x = base_x;
 	var y = base_y;
 	
- 	var geometry = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
-	var material = new THREE.MeshStandardMaterial({color: "magenta"});
+	for(var i = 0; i < weave["sizes"].length; i++) {
+		geometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
+	}
 	
-	var currentRing = new Ring(geometry, material, "base");
-	// currentRing.mesh.position.x = x;
-	// currentRing.mesh.position.y = y;
+	var currentRing = new Ring("base");
 	
 	head = currentRing;
 	
@@ -472,68 +481,16 @@ function createRings() {
 	linkRings(currentRing, frustum, 0);
 	
 	console.log(scene.children.length);
-	// var ring2 = {};
-	// ring2.mesh = new THREE.Mesh(geometry, material.clone());
-	// ring2.updated = false;
-	// ring2.mesh.position.x = x + full_radius;
-	// ring2.mesh.position.y = y;
-	// ring2.mesh.position.z = -50;
-	// ring2.mesh.rotation.y = THREE.Math.degToRad(-36);
-	// scene.add(ring2.mesh);
-	
-	/* var start = scene.children.length < 5;
-	var geometry = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
-
-	for(var i = 0; i < rows; i++) {
-		var odd = i % 2 == 1;
-
-		x = base_x;
-		if(odd)
-			x += full_radius / 1.3;
-
-		// horrible hack for now
-		if(start)
-			rings[i] = [];
-		for(var j = 0; j < cols; j++) {
-			
-			var material = new THREE.MeshStandardMaterial({
-				color: j >= rings[i].length || rings[i][j] === null ? "magenta" : rings[i][j].material.color
-			});
-			
-			if(j < rings[i].length && rings[i][j] !== null) {
-//				rings[i][j].geometry.dispose();
-//				rings[i][j].material.dispose();
-				rings[i][j].geometry = geometry;
-				rings[i][j].geometry.dynamic = true;
-				rings[i][j].geometry.verticesNeedUpdate = true;
-//				scene.remove(rings[i][j]);
-			}
-			else {
-			rings[i][j] = new THREE.Mesh(geometry, material);
-
-			scene.add(rings[i][j]);
-			}
-			rings[i][j].position.x = x;
-			rings[i][j].position.y = y;
-			rings[i][j].position.z = -50;
-
-			rings[i][j].rotation.y = Math.PI * 2 * (odd ? 0.1 : -0.1);
-
-			x += full_radius;
-		}
-
-		y -= full_radius * (odd ? 1.15 : 1.0);
-	} */
 	
 	var t1 = performance.now();
 	console.log(t1 - t0);
 }
 
-function updateRing(currentRing, geometry) {
+function updateRing(currentRing) {
 	if(currentRing.updated)
 		return;
 	
-	currentRing.mesh.geometry = geometry;
+	currentRing.mesh.geometry = geometries[weave["rings"][currentRing.ringIndex]["size"]];
 	currentRing.mesh.geometry.dynamic = true;
 	currentRing.mesh.geometry.verticesNeedUpdate = true;
 	
@@ -541,7 +498,7 @@ function updateRing(currentRing, geometry) {
 	
 	for(var i = 0; i < currentRing.links.length; i++) {
 		if(currentRing.links[i])
-			updateRing(currentRing.links[i], geometry);
+			updateRing(currentRing.links[i]);
 	}
 }
 
@@ -565,10 +522,15 @@ function updateRings() {
 	var base_y = 0;
 	var x = base_x;
 	var y = base_y;
+
 	
- 	var geometry = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
+	for(var i = 0; i < weave["sizes"].length; i++) {
+		if(geometries[i])
+			geometries[i].dispose();
+		geometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
+	}
 	
-	updateRing(currentRing, geometry);
+	updateRing(currentRing);
 	
 	resetRingFlag(currentRing);
 }
@@ -663,7 +625,7 @@ $(document).ready(function() {
 	});
 	
 	$("#weave").change(function() {
-		weave = $(this).val();
+		weave = weaves[$(this).val()];
 	});
 	
 	$("#inner-diameter").change(function() {
