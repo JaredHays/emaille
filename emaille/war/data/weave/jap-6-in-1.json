@@ -1,0 +1,169 @@
+﻿{
+	"name": "Japanese 6-in-1",
+	"geometries": [
+		{
+			"min": 2.9
+		},
+		{
+			"min": 2.9
+		}
+	],
+	"rings": [
+		{
+			"geometry": 0,
+			"rotation": 0,
+			"links": 6,
+			"base": true
+		},
+		{
+			"geometry": 1,
+			"rotation": 90,
+			"links": 2
+		}
+	],
+	"structure": {
+		"base": {
+			"base": true,
+			"ring": 0,
+			"pos": {"x": 0, "y": 0},
+			"links": [
+				"small-0",
+				"small-1",
+				"small-2",
+				"small-3",
+				"small-4",
+				"small-5"
+			]
+		},
+		"small-0": {
+			"ring": 1,
+			"pos": {"x": 0, "y": 1.1, "z": 0.5},
+			"links": [
+				"base",
+				"large-0"
+			]
+		},
+		"small-1": {
+			"ring": 1,
+			"pos": {"x": 0.95, "y": 0.55, "z": 0.5},
+			"rot": {"z": -30},
+			"links": [
+				"base",
+				"large-1"
+			]
+		},
+		"small-2": {
+			"ring": 1,
+			"pos": {"x": 0.95, "y": -0.55, "z": 0.5},
+			"rot": {"z": 30},
+			"links": [
+				"base",
+				"large-2"
+			]
+		},
+		"small-3": {
+			"ring": 1,
+			"pos": {"x": 0, "y": -1.1, "z": 0.5},
+			"rot": {"z": 0},
+			"links": [
+				"base",
+				"large-3"
+			]
+		},
+		"small-4": {
+			"ring": 1,
+			"pos": {"x": -0.95, "y": -0.55, "z": 0.5},
+			"rot": {"z": -30},
+			"links": [
+				"base",
+				"large-4"
+			]
+		},
+		"small-5": {
+			"ring": 1,
+			"pos": {"x": -0.95, "y": 0.55, "z": 0.5},
+			"rot": {"z": 30},
+			"links": [
+				"base",
+				"large-5"
+			]
+		},
+		"large-0": {
+			"ring": 0,
+			"pos": {"x": 0, "y": 2.2},
+			"links": [
+				null,
+				null,
+				null,
+				"small-0",
+				null,
+				null
+			]
+		},
+		"large-1": {
+			"ring": 0,
+			"pos": {"x": 1.9, "y": 1.1},
+			"rot": {"z": -30},
+			"links": [
+				null,
+				null,
+				null,
+				null,
+				"small-1",
+				null
+			]
+		},
+		"large-2": {
+			"ring": 0,
+			"pos": {"x": 1.9, "y": -1.1},
+			"rot": {"z": 30},
+			"links": [
+				null,
+				null,
+				null,
+				null,
+				null,
+				"small-2"
+			]
+		},
+		"large-3": {
+			"ring": 0,
+			"pos": {"x": 0, "y": -2.2},
+			"rot": {"z": 0},
+			"links": [
+				"small-3",
+				null,
+				null,
+				null,
+				null,
+				null
+			]
+		},
+		"large-4": {
+			"ring": 0,
+			"pos": {"x": -1.9, "y": -1.1},
+			"rot": {"z": -30},
+			"links": [
+				null,
+				"small-4",
+				null,
+				null,
+				null,
+				null
+			]
+		},
+		"large-5": {
+			"ring": 0,
+			"pos": {"x": -1.9, "y": 1.1},
+			"rot": {"z": 30},
+			"links": [
+				null,
+				null,
+				"small-5",
+				null,
+				null,
+				null
+			]
+		}
+	}
+}

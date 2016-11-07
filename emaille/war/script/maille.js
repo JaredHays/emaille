@@ -30,8 +30,8 @@ var rings = [];
 var head = null;
 
 var scale = 100;
-var radius = 0.1 * scale;
-var tube = 10;
+// var radius = 0.1 * scale;
+// var tube = 10;
 var radialSegments = 16;
 var tubularSegments = 100;
 
@@ -39,6 +39,8 @@ var duration = 5000; // ms
 var currentTime = Date.now();
 
 var raycaster = new THREE.Raycaster();
+
+var ringDiv;
 
 var mouse = {
 	down: false,
@@ -67,6 +69,7 @@ function getClickedRing() {
 }
 
 function loadStaticData() {
+	var data;
 	// $.ajax({
 		// url: "https://e-maille.appspot.com/data/getwires",
 		// dataType: "json",
@@ -87,136 +90,6 @@ function loadStaticData() {
 			// weaves = data;
 		// }
 	// });
-	var data = [{
-		"name": "European 4-in-1",
-		"sizes": [
-			{
-				"min": 2.9
-			}
-		],
-		"rings": [
-			{
-				"size": 0,
-				"rotation": -36,
-				"links": 4,
-				"base": true
-			},
-			{
-				"size": 0,
-				"rotation": 36,
-				"links": 4
-			}
-		],
-		"structure": {
-			"base": {
-				"id": "base",
-				"ring": 0,
-				"pos": {"x": 0, "y": 0},
-				"links": [
-					"top-left",
-					"top-right",
-					"bottom-right",
-					"bottom-left"
-				]
-			},
-			"top-left": {
-				"id": "top-left",
-				"ring": 1,
-				"pos": {"x": -0.7, "y": 1.1},
-				"links": [
-					null,
-					"top",
-					"base",
-					"left"
-				]
-			},
-			"top-right": {
-				"id": "top-right",
-				"ring": 1,
-				"pos": {"x": 0.4, "y": 1.1},
-				"links": [
-					"top",
-					null,
-					"right",
-					"base"
-				]
-			},
-			"bottom-right": {
-				"id": "bottom-right",
-				"ring": 1,
-				"pos": {"x": 0.4, "y": -1.1},
-				"links": [
-					"base",
-					"right",
-					null,
-					"bottom"
-				]
-			},
-			"bottom-left": {
-				"id": "bottom-left",
-				"ring": 1,
-				"pos": {"x": -0.7, "y": -1.1},
-				"links": [
-					"left",
-					"base",
-					"bottom",
-					null
-				]
-			},
-			"left": {
-				"id": "left",
-				"ring": 0,
-				"pos": {"x": -1.1, "y": 0},
-				"links": [
-					null,
-					"top-left",
-					"bottom-left",
-					null
-				]
-			},
-			"right": {
-				"id": "right",
-				"ring": 0,
-				"pos": {"x": 1.1, "y": 0},
-				"links": [
-					"top-right",
-					null,
-					null,
-					"bottom-right"
-				]
-			},
-			"top": {
-				"id": "top",
-				"ring": 0,
-				"pos": {"x": 0, "y": 2.2},
-				"links": [
-					null,
-					null,
-					"top-right",
-					"top-left"
-				]
-			},
-			"bottom": {
-				"id": "bottom",
-				"ring": 0,
-				"pos": {"x": 0, "y": -2.2},
-				"links": [
-					"bottom-left",
-					"bottom-right",
-					null,
-					null
-				]
-			}
-		}
-	}];
-	
-	var weaveList = $("#weave");
-	for(var i = 0; i < data.length; i++) {
-		var weave = data[i];
-		weaves[weave.name] = weave;
-		weaveList.append("<option value='" + weave.name + "'>" + weave.name + "</option>");
-	}
-	weaveList.change();
 	
 	data = [{
 		"name": "AWG",
@@ -327,28 +200,352 @@ function loadStaticData() {
 			}
 		}
 	}];
-	var systemList = $("#wire-gauge-system");
+	
 	for(var i = 0; i < data.length; i++) {
 		var system = data[i];
 		wireGauges[system.name] = system;
-		systemList.append("<option value='" + system.name + "'>" + system.name + "</option>");
 	}
-	systemList.change();
+	setupWireGaugeLists();
+	
+	data = [
+		{
+			"name": "European 4-in-1",
+			"geometries": [
+				{
+					"min": 2.9
+				}
+			],
+			"rings": [
+				{
+					"geometry": 0,
+					"rotation": -36,
+					"links": 4,
+					"base": true
+				},
+				{
+					"geometry": 0,
+					"rotation": 36,
+					"links": 4
+				}
+			],
+			"structure": {
+				"base": {
+					"id": "base",
+					"base": true,
+					"ring": 0,
+					"pos": {"x": 0, "y": 0},
+					"links": [
+						"top-left",
+						"top-right",
+						"bottom-right",
+						"bottom-left"
+					]
+				},
+				"top-left": {
+					"id": "top-left",
+					"ring": 1,
+					"pos": {"x": -0.7, "y": 1.1},
+					"links": [
+						null,
+						"top",
+						"base",
+						"left"
+					]
+				},
+				"top-right": {
+					"id": "top-right",
+					"ring": 1,
+					"pos": {"x": 0.4, "y": 1.1},
+					"links": [
+						"top",
+						null,
+						"right",
+						"base"
+					]
+				},
+				"bottom-right": {
+					"id": "bottom-right",
+					"ring": 1,
+					"pos": {"x": 0.4, "y": -1.1},
+					"links": [
+						"base",
+						"right",
+						null,
+						"bottom"
+					]
+				},
+				"bottom-left": {
+					"id": "bottom-left",
+					"ring": 1,
+					"pos": {"x": -0.7, "y": -1.1},
+					"links": [
+						"left",
+						"base",
+						"bottom",
+						null
+					]
+				},
+				"left": {
+					"id": "left",
+					"ring": 0,
+					"pos": {"x": -1.1, "y": 0},
+					"links": [
+						null,
+						"top-left",
+						"bottom-left",
+						null
+					]
+				},
+				"right": {
+					"id": "right",
+					"ring": 0,
+					"pos": {"x": 1.1, "y": 0},
+					"links": [
+						"top-right",
+						null,
+						null,
+						"bottom-right"
+					]
+				},
+				"top": {
+					"id": "top",
+					"ring": 0,
+					"pos": {"x": 0, "y": 2.2},
+					"links": [
+						null,
+						null,
+						"top-right",
+						"top-left"
+					]
+				},
+				"bottom": {
+					"id": "bottom",
+					"ring": 0,
+					"pos": {"x": 0, "y": -2.2},
+					"links": [
+						"bottom-left",
+						"bottom-right",
+						null,
+						null
+					]
+				}
+			}
+		},
+		{
+			"name": "Japanese 6-in-1",
+			"geometries": [
+				{
+					"min": 2.9
+				},
+				{
+					"min": 2.9
+				}
+			],
+			"rings": [
+				{
+					"geometry": 0,
+					"rotation": 0,
+					"links": 6,
+					"base": true
+				},
+				{
+					"geometry": 1,
+					"rotation": 90,
+					"links": 2
+				}
+			],
+			"structure": {
+				"base": {
+					"base": true,
+					"ring": 0,
+					"pos": {"x": 0, "y": 0},
+					"links": [
+						"small-0",
+						"small-1",
+						"small-2",
+						"small-3",
+						"small-4",
+						"small-5"
+					]
+				},
+				"small-0": {
+					"ring": 1,
+					"pos": {"x": 0, "y": 1.1, "z": 0.5},
+					"links": [
+						"base",
+						"large-0"
+					]
+				},
+				"small-1": {
+					"ring": 1,
+					"pos": {"x": 0.95, "y": 0.55, "z": 0.5},
+					"rot": {"z": -30},
+					"links": [
+						"base",
+						"large-1"
+					]
+				},
+				"small-2": {
+					"ring": 1,
+					"pos": {"x": 0.95, "y": -0.55, "z": 0.5},
+					"rot": {"z": 30},
+					"links": [
+						"base",
+						"large-2"
+					]
+				},
+				"small-3": {
+					"ring": 1,
+					"pos": {"x": 0, "y": -1.1, "z": 0.5},
+					"rot": {"z": 0},
+					"links": [
+						"base",
+						"large-3"
+					]
+				},
+				"small-4": {
+					"ring": 1,
+					"pos": {"x": -0.95, "y": -0.55, "z": 0.5},
+					"rot": {"z": -30},
+					"links": [
+						"base",
+						"large-4"
+					]
+				},
+				"small-5": {
+					"ring": 1,
+					"pos": {"x": -0.95, "y": 0.55, "z": 0.5},
+					"rot": {"z": 30},
+					"links": [
+						"base",
+						"large-5"
+					]
+				},
+				"large-0": {
+					"ring": 0,
+					"pos": {"x": 0, "y": 2.2},
+					"links": [
+						null,
+						null,
+						null,
+						"small-0",
+						null,
+						null
+					]
+				},
+				"large-1": {
+					"ring": 0,
+					"pos": {"x": 1.9, "y": 1.1},
+					"rot": {"z": -30},
+					"links": [
+						null,
+						null,
+						null,
+						null,
+						"small-1",
+						null
+					]
+				},
+				"large-2": {
+					"ring": 0,
+					"pos": {"x": 1.9, "y": -1.1},
+					"rot": {"z": 30},
+					"links": [
+						null,
+						null,
+						null,
+						null,
+						null,
+						"small-2"
+					]
+				},
+				"large-3": {
+					"ring": 0,
+					"pos": {"x": 0, "y": -2.2},
+					"rot": {"z": 0},
+					"links": [
+						"small-3",
+						null,
+						null,
+						null,
+						null,
+						null
+					]
+				},
+				"large-4": {
+					"ring": 0,
+					"pos": {"x": -1.9, "y": -1.1},
+					"rot": {"z": -30},
+					"links": [
+						null,
+						"small-4",
+						null,
+						null,
+						null,
+						null
+					]
+				},
+				"large-5": {
+					"ring": 0,
+					"pos": {"x": -1.9, "y": 1.1},
+					"rot": {"z": 30},
+					"links": [
+						null,
+						null,
+						"small-5",
+						null,
+						null,
+						null
+					]
+				}
+			}
+		}
+	];
+	
+	var weaveList = $("#weave");
+	for(var i = 0; i < data.length; i++) {
+		var weave = data[i];
+		weaves[weave.name] = weave;
+		weaveList.append("<option value='" + weave.name + "'>" + weave.name + "</option>");
+	}
+	weaveList.change();
+	
+}
+
+function setupWireGaugeLists() {
+	$(".wire-gauge-system").each(function() {
+		for(var systemName in wireGauges) {
+			var system = wireGauges[systemName];
+			$(this).append("<option value='" + system.name + "'>" + system.name + "</option>");
+		}
+		$(this).change();
+	});
 }
 
 function Ring(ringID, basePos) {
-	this.ringIndex = weave["structure"][ringID]["ring"];
+	var structureData = weave["structure"][ringID];
+	this.ringIndex = structureData["ring"];
 	var ringData = weave["rings"][this.ringIndex];
-	this.mesh = new THREE.Mesh(geometries[ringData["size"]], baseMaterial.clone());
+	this.geometryIndex = ringData["geometry"];
+	this.mesh = new THREE.Mesh(geometries[this.geometryIndex], baseMaterial.clone());
 	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
+	if(structureData.rot) {
+		if(structureData.rot.x)
+			this.mesh.rotateX(THREE.Math.degToRad(structureData.rot.x));
+		if(structureData.rot.y)
+			this.mesh.rotateY(THREE.Math.degToRad(structureData.rot.y));
+		if(structureData.rot.z) 
+			this.mesh.rotateZ(THREE.Math.degToRad(structureData.rot.z));
+	}
+	this.mesh.rotateY(THREE.Math.degToRad(ringData.rotation));
 	if(basePos)
 		 this.mesh.position.copy(basePos);
-	this.mesh.position.x += full_radius * weave["structure"][ringID]["pos"].x;
-	this.mesh.position.y += full_radius * weave["structure"][ringID]["pos"].y;
+	this.mesh.position.x += full_radius * structureData.pos.x;
+	this.mesh.position.y += full_radius * structureData.pos.y;
 	this.mesh.position.z = -50;
-	this.mesh.rotation.y = THREE.Math.degToRad(weave["rings"][this.ringIndex]["rotation"]);
+	this.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
 	this.updated = false;
-	this.links = new Array(weave["rings"][this.ringIndex]["links"]);	
+	this.links = new Array(ringData.links);	
 	this.ringID = ringID;
 	
 	this.isInCamera = function(frustum) {
@@ -366,13 +563,21 @@ function Ring(ringID, basePos) {
 function linkRings(currentRing, frustum) {
 	// Stop once current ring is no longer visible on the canvas
 	currentRing.mesh.updateMatrixWorld();
-	if(!currentRing.isInCamera(frustum)) {
+	if(!currentRing.isInCamera(frustum) || scene.children.length > 25) {
 		return;
 	}
 	
 	var structure = weave["structure"];
-	// TODO: refactor out "base"
-	var baseID = "base";
+	// Get ID of base ring in pattern
+	var baseID;
+	for(var ringID in structure) {
+		if(structure[ringID].base) {
+			baseID = ringID;
+			break;
+		}
+	}
+	if(!baseID)
+		return;
 	currentRing.ringID = baseID;
 	
 	// Populate ring map with existing rings
@@ -381,6 +586,7 @@ function linkRings(currentRing, frustum) {
 	while(addedNewRing) {
 		addedNewRing = false;
 		for(var ringID in rings) {
+			console.log("ring: " + ringID);
 			for(var i = 0; i < rings[ringID].links.length; i++) {
 				var linkedRing = rings[ringID].links[i];
 				if(linkedRing) {
@@ -390,6 +596,7 @@ function linkRings(currentRing, frustum) {
 					if(linkedRing.ringID && !(linkedRing.ringID in rings)) {
 						rings[linkedRing.ringID] = linkedRing;
 						addedNewRing = true;
+						console.log("adding ring: " + linkedRing.ringID);
 					}
 				}
 			}
@@ -442,6 +649,9 @@ function linkRings(currentRing, frustum) {
 }
 
 function createRings() {
+	if(!weave || Object.keys(wireGauges).length == 0)
+		return;
+	
 	var t0 = performance.now();
 	
 	// Keep children 0, 1, and 2: camera and lights
@@ -450,20 +660,9 @@ function createRings() {
 		scene.remove(scene.children[i]);
 	}
 	
-	var oldRadius = radius;
-	var oldTube = tube;
-	radius = $("#inner-diameter").val() * scale / 2;
-	tube = getSelectedWireGauge()[units] * scale;
-	if(oldRadius === radius && oldTube === tube)
-		return;
-	
-	var full_radius = radius + (tube / 2);
-	var base_x = 0;
-	var base_y = 0;
-	var x = base_x;
-	var y = base_y;
-	
-	for(var i = 0; i < weave["sizes"].length; i++) {
+	for(var i = 0; i < weave.geometries.length; i++) {
+		var radius = $("div#ring-div-" + i + " .inner-diameter").val() * scale / 2;
+		var tube = getSelectedWireGauge(i)[units] * scale;
 		geometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
 	}
 	
@@ -486,13 +685,15 @@ function createRings() {
 	console.log(t1 - t0);
 }
 
-function updateRing(currentRing) {
+function updateRing(currentRing, geometryIndex) {
 	if(currentRing.updated)
 		return;
 	
-	currentRing.mesh.geometry = geometries[weave["rings"][currentRing.ringIndex]["size"]];
-	currentRing.mesh.geometry.dynamic = true;
-	currentRing.mesh.geometry.verticesNeedUpdate = true;
+	if(!geometryIndex || currentRing.geometryIndex === geometryIndex) {	
+		currentRing.mesh.geometry = geometries[currentRing.geometryIndex];
+		currentRing.mesh.geometry.dynamic = true;
+		currentRing.mesh.geometry.verticesNeedUpdate = true;
+	}
 	
 	currentRing.updated = true;
 	
@@ -502,37 +703,34 @@ function updateRing(currentRing) {
 	}
 }
 
-function updateRings() {
+function updateRings(geometryIndex) {
+	if(!weave || Object.keys(wireGauges).length == 0)
+		return;
+	
 	// No rings to update, create rings
 	if(head == null) {
 		createRings();
 		return;
 	}
 	
+	var t0 = performance.now();	
+	
 	var currentRing = head;
-	var oldRadius = radius;
-	var oldTube = tube;
-	radius = $("#inner-diameter").val() * scale / 2;
-	tube = getSelectedWireGauge()[units] * scale;
-	if(oldRadius === radius && oldTube === tube)
-		return;
-	
-	var full_radius = radius + (tube / 2);
-	var base_x = 0;
-	var base_y = 0;
-	var x = base_x;
-	var y = base_y;
 
+	if(geometries[geometryIndex])
+		geometries[geometryIndex].dispose();
+	var radius = $("div#ring-div-" + geometryIndex + " .inner-diameter").val() * scale / 2;
+	var tube = getSelectedWireGauge(geometryIndex)[units] * scale;
+	geometries[geometryIndex] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
 	
-	for(var i = 0; i < weave["sizes"].length; i++) {
-		if(geometries[i])
-			geometries[i].dispose();
-		geometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
-	}
-	
-	updateRing(currentRing);
+	updateRing(currentRing, geometryIndex);
 	
 	resetRingFlag(currentRing);
+	
+	console.log(scene.children.length);
+	
+	var t1 = performance.now();
+	console.log(t1 - t0);
 }
 
 function resetRingFlag(currentRing) {
@@ -547,13 +745,13 @@ function resetRingFlag(currentRing) {
 	}
 }
 
-function getSelectedWireGauge() {
-	return wireGauges[$("#wire-gauge-system").val()]["sizes"][$("#wire-gauge").val()];
+function getSelectedWireGauge(geometryIndex) {
+	return wireGauges[$(".wire-gauge-system").val()]["sizes"][$("div#ring-div-" + geometryIndex + " .wire-gauge").val()];
 }
 
-function createWireGaugeList(systemName) {
+function createWireGaugeList(geometryIndex, systemName) {
 	var system = wireGauges[systemName];
-	var gaugeList = $("#wire-gauge");
+	var gaugeList = $("div#ring-div-" + geometryIndex + " .wire-gauge");
 	var selectedGauge = gaugeList.val();
 	gaugeList.html("");
 	for(var gauge in system["sizes"]) {
@@ -561,11 +759,14 @@ function createWireGaugeList(systemName) {
 	}
 }
 
-function updateAR() {
-	$("#aspect-ratio").val($("#inner-diameter").val() / getSelectedWireGauge()[units]);
+function updateAR(geometryIndex) {
+	$("div#ring-div-" + geometryIndex + " .aspect-ratio").val($("div#ring-div-" + geometryIndex + " .inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units]);
 }
 
 $(document).ready(function() {
+	ringDiv = $("div.ring-div");
+	ringDiv.remove();
+	
 	canvas = document.getElementById("canvas");
 	var canvasPos = $(canvas).position();
 	
@@ -581,6 +782,7 @@ $(document).ready(function() {
 	scene = new THREE.Scene();
 
 	camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
+	camera.position.z = 50;
 	scene.add(camera);
 
 	var light = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -614,32 +816,52 @@ $(document).ready(function() {
 		
 	});
 	
-	$("#wire-gauge-system").change(function() {
-		createWireGaugeList($(this).val());
-		$("#wire-gauge").change();
+	$(document).on("change", ".wire-gauge-system", function() {
+		var ringDiv = $(this).closest("div.ring-div");
+		createWireGaugeList(ringDiv.data("geometry"), $(this).val());
+		ringDiv.find(".wire-gauge").change();
 	});
 	
-	$("#wire-gauge").change(function() {
-		updateAR();
-		updateRings();
+	$(document).on("change", ".wire-gauge", function() {
+		var ringDiv = $(this).closest("div.ring-div");
+		updateAR(ringDiv.data("geometry"));
+		updateRings(ringDiv.data("geometry"));
 	});
 	
-	$("#weave").change(function() {
+	$(document).on("change", "#weave", function() {
 		weave = weaves[$(this).val()];
+		
+		$("div.ring-div").remove();
+		var outerDiv = $("div#ring-div-div");
+		for(var i = 0; i < weave.geometries.length; i++) {
+			outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
+		}
+		setupWireGaugeLists();
+		createRings();
+		// $.ajax({
+			// url: "https://storage.googleapis.com/e-maille.appspot.com/data/weave/" + $(this).val(),
+			// dataType: "json",
+			// success: function(data) {
+				// weave = data;
+				// updateRings();
+			// }
+		// });
 	});
 	
-	$("#inner-diameter").change(function() {
-		updateAR();
-		updateRings();
+	$(document).on("change", ".inner-diameter", function() {
+		var ringDiv = $(this).closest("div.ring-div");
+		updateAR(ringDiv.data("geometry"));
+		updateRings(ringDiv.data("geometry"));
 	});
 	
-	$("#aspect-ratio").change(function() {
-		$("#inner-diameter").val($(this).val() * getSelectedWireGauge()[units]);
-		updateRings();
+	$(document).on("change", ".aspect-ratio", function() {
+		var ringDiv = $(this).closest("div.ring-div");
+		ringDiv.find(".inner-diameter").val($(this).val() * getSelectedWireGauge()[units]);
+		updateRings(ringDiv.data("geometry"));
 	});
 	
 	// Switch unit-based inputs between in. and mm.
-	$("input[name='units'][type='radio']").change(function() {
+	$(document).on("change", "input[name='units'][type='radio']", function() {
 		units = $(this).val();
 		if(units === "in") {
 			$("input.unit-field").each(function() {
