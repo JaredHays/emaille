@@ -502,16 +502,7 @@ function loadStaticData() {
 		}
 	];
 	
-	data = [
-		{
-			"name": "European 4-in-1",
-			"file": "euro-4-in-1"
-		},
-		{
-			"name": "Japanese 6-in-1",
-			"file": "jap-6-in-1"
-		}
-	]
+	data = [{"name":"European 4-in-1","file":"euro-4-in-1"},{"name":"Japanese 6-in-1","file":"jap-6-in-1"}];
 	var weaveList = $("#weave");
 	for(var i = 0; i < data.length; i++) {
 		var weave = data[i];
@@ -596,7 +587,7 @@ function linkRings(currentRing, frustum) {
 	while(addedNewRing) {
 		addedNewRing = false;
 		for(var ringID in rings) {
-			console.log("ring: " + ringID);
+			// console.log("ring: " + ringID);
 			for(var i = 0; i < rings[ringID].links.length; i++) {
 				var linkedRing = rings[ringID].links[i];
 				if(linkedRing) {
@@ -606,7 +597,7 @@ function linkRings(currentRing, frustum) {
 					if(linkedRing.ringID && !(linkedRing.ringID in rings)) {
 						rings[linkedRing.ringID] = linkedRing;
 						addedNewRing = true;
-						console.log("adding ring: " + linkedRing.ringID);
+						// console.log("adding ring: " + linkedRing.ringID);
 					}
 				}
 			}
@@ -846,6 +837,16 @@ $(document).ready(function() {
 			dataType: "json",
 			success: function(data) {
 				weave = data;
+				$("div.ring-div").remove();
+				var outerDiv = $("div#ring-div-div");
+				for(var i = 0; i < weave.geometries.length; i++) {
+					outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
+				}
+				setupWireGaugeLists();
+				createRings();
+			},
+			error: function(data) {
+				weave = JSON.parse(data.responseText.substring(3));
 				$("div.ring-div").remove();
 				var outerDiv = $("div#ring-div-div");
 				for(var i = 0; i < weave.geometries.length; i++) {
