@@ -37,6 +37,9 @@ var ringDiv;
 
 var updates = new Set();
 
+var rings;// = new graphlib.Graph();
+var nodeIndex;// = 0;
+
 var mouse = {
 	down: false,
 	pos: new THREE.Vector2()
@@ -130,6 +133,10 @@ function Ring(ringID, basePos) {
 	};
 	
 	scene.add(this.mesh);
+	
+	this.nodeIndex = nodeIndex;
+	rings.setNode("ring-" + nodeIndex, this);
+	nodeIndex++;
 }
 
 function linkRings(currentRing, frustum) {
@@ -225,6 +232,9 @@ function createRings() {
 		return;
 	
 	var t0 = performance.now();
+	
+	rings = new graphlib.Graph();
+	nodeIndex = 0;
 	
 	// Keep children 0, 1, and 2: camera and lights
 	// TODO: store those somewhere instead of using indexes
