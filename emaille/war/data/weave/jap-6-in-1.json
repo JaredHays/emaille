@@ -2,10 +2,20 @@
 	"name": "Japanese 6-in-1",
 	"geometries": [
 		{
-			"min": 2.9
+			"min": 2.9,
+			"defaults": {
+				"wireSystem": "AWG",
+				"wireGauge": 16,
+				"innerDiameter": 0.75
+			}
 		},
 		{
-			"min": 2.9
+			"min": 2.9,
+			"defaults": {
+				"wireSystem": "SWG",
+				"wireGauge": 16,
+				"innerDiameter": 0.5
+			}
 		}
 	],
 	"rings": [
@@ -59,6 +69,14 @@
 			"links": [
 				"base",
 				"large-2"
+			],
+			"link-paths": [
+				[],
+				[],
+				[],
+				[],
+				[],
+				[]
 			]
 		},
 		"small-3": {
@@ -98,6 +116,14 @@
 				"small-0",
 				null,
 				null
+			],
+			"link-paths": [
+				[],
+				[],
+				[],
+				[],
+				[],
+				[]
 			]
 		},
 		"large-1": {
@@ -111,6 +137,14 @@
 				null,
 				"small-1",
 				null
+			],
+			"link-paths": [
+				[],
+				[],
+				[],
+				[],
+				[],
+				[]
 			]
 		},
 		"large-2": {

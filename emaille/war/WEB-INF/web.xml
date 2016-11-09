@@ -14,11 +14,20 @@ http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
 	</servlet-mapping>
 		
 	<servlet>
-		<servlet-name>GetWeaves</servlet-name>
-		<servlet-class>com.jaredhays.emaille.GetWeavesServlet</servlet-class>
+		<servlet-name>GetWeave</servlet-name>
+		<servlet-class>com.jaredhays.emaille.GetWeaveServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
-		<servlet-name>GetWeaves</servlet-name>
-		<url-pattern>/data/getweaves</url-pattern>
+		<servlet-name>GetWeave</servlet-name>
+		<url-pattern>/data/getweave</url-pattern>
+	</servlet-mapping>
+		
+	<servlet>
+		<servlet-name>GetWeavesList</servlet-name>
+		<servlet-class>com.jaredhays.emaille.GetWeavesListServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>GetWeavesList</servlet-name>
+		<url-pattern>/data/getweaveslist</url-pattern>
 	</servlet-mapping>
 </web-app>

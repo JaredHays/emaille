@@ -9,17 +9,20 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 
 @SuppressWarnings("serial")
-public class GetWeavesServlet extends HttpServlet {
+public class GetWeaveServlet extends HttpServlet {
 
 	@Override
 	public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		String name = req.getParameter("name");
 		resp.setContentType("application/json");
+		resp.setCharacterEncoding(Charsets.UTF_8.name());
+		resp.addHeader("Access-Control-Allow-Origin", "*");
+		resp.addHeader("Cache-Control", "no-cache");
 		PrintWriter writer = resp.getWriter();
-		writer.write("[");
-		writer.write(CharStreams.toString(new InputStreamReader(getServletContext().getResourceAsStream("/data/weave/euro-4-in-1.json"))));
-		writer.write("]");
+		writer.write(CharStreams.toString(new InputStreamReader(getServletContext().getResourceAsStream("/data/weave/" + name + ".json"))));
 	}
 }

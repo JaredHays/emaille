@@ -9,7 +9,8 @@ Brush.prototype = {
 	onMouseDown: function() {
 		var clicked = getClickedRing();
 		if(clicked !== null)
-			clicked.material.color = new THREE.Color(ringColor.val());
+			scene.remove(clicked);
+			// clicked.material.color = new THREE.Color(ringColor.val());
 	},
 
 	onMouseUp: function() {

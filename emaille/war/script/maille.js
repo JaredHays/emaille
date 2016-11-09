@@ -16,22 +16,15 @@ var ringColor = null;
 var units = "in";
 
 var wireGauges = {};
-var weaves = {};
 
 var weave = null;
 
 var geometries = [];
 var baseMaterial = new THREE.MeshStandardMaterial({color: "magenta"});
 
-var rows = 10;
-var cols = 10;
-
-var rings = [];
 var head = null;
 
 var scale = 100;
-// var radius = 0.1 * scale;
-// var tube = 10;
 var radialSegments = 16;
 var tubularSegments = 100;
 
@@ -42,6 +35,8 @@ var raycaster = new THREE.Raycaster();
 
 var ringDiv;
 
+var updates = new Set();
+
 var mouse = {
 	down: false,
 	pos: new THREE.Vector2()
@@ -49,13 +44,15 @@ var mouse = {
 var tool = new Brush();
 
 function run() {
+	for(var i = 0; i < updates.length; i++)
+		updateRings(updates[i]);
+	updates.clear();
+	
 	requestAnimationFrame(function() {
 		run();
 	});
 
 	renderer.render(scene, camera);
-
-	// animate();
 }
 
 function getClickedRing() {
@@ -69,457 +66,31 @@ function getClickedRing() {
 }
 
 function loadStaticData() {
-	var data;
-	// $.ajax({
-		// url: "https://e-maille.appspot.com/data/getwires",
-		// dataType: "json",
-		// success: function(data) {
-			// var systemList = $("#wire-gauge-system");
-			// for(var i = 0; i < data.length; i++) {
-				// var system = data[i];
-				// wireGauges[system.name] = system;
-				// systemList.append("<option value='" + system.name + "'>" + system.name + "</option>");
-			// }
-			// systemList.change();
-		// }
-	// });
-	// $.ajax({
-		// url: "https://e-maille.appspot.com/data/getweaves",
-		// dataType: "json",
-		// success: function(data) {
-			// weaves = data;
-		// }
-	// });
-	
-	data = [{
-		"name": "AWG",
-		"sizes": {
-			"12": {
-				"mm": 2.05232,
-				"in": 0.0808
-			},
-			"13": {
-				"mm": 1.82753,
-				"in": 0.07196
-			},
-			"14": {
-				"mm": 1.62712,
-				"in": 0.06406
-			},
-			"15": {
-				"mm": 1.44932,
-				"in": 0.05706
-			},
-			"16": {
-				"mm": 1.29083,
-				"in": 0.05082
-			},
-			"17": {
-				"mm": 1.14935,
-				"in": 0.04525
-			},
-			"18": {
-				"mm": 1.02362,
-				"in": 0.04030
-			},
-			"19": {
-				"mm": 0.91161,
-				"in": 0.03589
-			},
-			"20": {
-				"mm": 0.78892,
-				"in": 0.03106
-			},
-			"21": {
-				"mm": 0.72288,
-				"in": 0.02846
-			},
-			"22": {
-				"mm": 0.64364,
-				"in": 0.02534
-			},
-			"23": {
-				"mm": 0.57328,
-				"in": 0.02257
-			},
-			"24": {
-				"mm": 0.51054,
-				"in": 0.02010
+	$.ajax({
+		url: "https://e-maille.appspot.com/data/getwires",
+		dataType: "json",
+		success: function(data) {
+			for(var i = 0; i < data.length; i++) {
+				var system = data[i];
+				wireGauges[system.name] = system;
 			}
+			setupRingDivs();
 		}
-	},{
-		"name": "SWG",
-		"sizes": {
-			"14": {
-				"mm": 2.03200,
-				"in": 0.08000
-			},
-			"15": {
-				"mm": 1.82280,
-				"in": 0.07200
-			},
-			"16": {
-				"mm": 1.62712,
-				"in": 0.06406
-			},
-			"17": {
-				"mm": 1.42240,
-				"in": 0.05600
-			},
-			"18": {
-				"mm": 1.21920,
-				"in": 0.04800
-			},
-			"19": {
-				"mm": 1.01600,
-				"in": 0.04000
-			},
-			"20": {
-				"mm": 0.91440,
-				"in": 0.03600
-			},
-			"21": {
-				"mm": 0.81280,
-				"in": 0.03200
-			},
-			"22": {
-				"mm": 0.71120,
-				"in": 0.02800
-			},
-			"23": {
-				"mm": 0.60960,
-				"in": 0.02400
-			},
-			"24": {
-				"mm": 0.55880,
-				"in": 0.02200
-			},
-			"25": {
-				"mm": 0.50800,
-				"in": 0.02000
+	});
+	$.ajax({
+		url: "https://e-maille.appspot.com/data/getweaveslist",
+		dataType: "json",
+		success: function(data) {
+			var weaveList = $("#weave");
+			for(var i = 0; i < data.length; i++) {
+				var weave = data[i];
+				weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
 			}
-		}
-	}];
-	
-	for(var i = 0; i < data.length; i++) {
-		var system = data[i];
-		wireGauges[system.name] = system;
-	}
-	setupWireGaugeLists();
-	
-	data = [
-		{
-			"name": "European 4-in-1",
-			"geometries": [
-				{
-					"min": 2.9
-				}
-			],
-			"rings": [
-				{
-					"geometry": 0,
-					"rotation": -36,
-					"links": 4,
-					"base": true
-				},
-				{
-					"geometry": 0,
-					"rotation": 36,
-					"links": 4
-				}
-			],
-			"structure": {
-				"base": {
-					"id": "base",
-					"base": true,
-					"ring": 0,
-					"pos": {"x": 0, "y": 0},
-					"links": [
-						"top-left",
-						"top-right",
-						"bottom-right",
-						"bottom-left"
-					]
-				},
-				"top-left": {
-					"id": "top-left",
-					"ring": 1,
-					"pos": {"x": -0.7, "y": 1.1},
-					"links": [
-						null,
-						"top",
-						"base",
-						"left"
-					]
-				},
-				"top-right": {
-					"id": "top-right",
-					"ring": 1,
-					"pos": {"x": 0.4, "y": 1.1},
-					"links": [
-						"top",
-						null,
-						"right",
-						"base"
-					]
-				},
-				"bottom-right": {
-					"id": "bottom-right",
-					"ring": 1,
-					"pos": {"x": 0.4, "y": -1.1},
-					"links": [
-						"base",
-						"right",
-						null,
-						"bottom"
-					]
-				},
-				"bottom-left": {
-					"id": "bottom-left",
-					"ring": 1,
-					"pos": {"x": -0.7, "y": -1.1},
-					"links": [
-						"left",
-						"base",
-						"bottom",
-						null
-					]
-				},
-				"left": {
-					"id": "left",
-					"ring": 0,
-					"pos": {"x": -1.1, "y": 0},
-					"links": [
-						null,
-						"top-left",
-						"bottom-left",
-						null
-					]
-				},
-				"right": {
-					"id": "right",
-					"ring": 0,
-					"pos": {"x": 1.1, "y": 0},
-					"links": [
-						"top-right",
-						null,
-						null,
-						"bottom-right"
-					]
-				},
-				"top": {
-					"id": "top",
-					"ring": 0,
-					"pos": {"x": 0, "y": 2.2},
-					"links": [
-						null,
-						null,
-						"top-right",
-						"top-left"
-					]
-				},
-				"bottom": {
-					"id": "bottom",
-					"ring": 0,
-					"pos": {"x": 0, "y": -2.2},
-					"links": [
-						"bottom-left",
-						"bottom-right",
-						null,
-						null
-					]
-				}
-			}
+			weaveList.change();
 		},
-		{
-			"name": "Japanese 6-in-1",
-			"geometries": [
-				{
-					"min": 2.9
-				},
-				{
-					"min": 2.9
-				}
-			],
-			"rings": [
-				{
-					"geometry": 0,
-					"rotation": 0,
-					"links": 6,
-					"base": true
-				},
-				{
-					"geometry": 1,
-					"rotation": 90,
-					"links": 2
-				}
-			],
-			"structure": {
-				"base": {
-					"base": true,
-					"ring": 0,
-					"pos": {"x": 0, "y": 0},
-					"links": [
-						"small-0",
-						"small-1",
-						"small-2",
-						"small-3",
-						"small-4",
-						"small-5"
-					]
-				},
-				"small-0": {
-					"ring": 1,
-					"pos": {"x": 0, "y": 1.1, "z": 0.5},
-					"links": [
-						"base",
-						"large-0"
-					]
-				},
-				"small-1": {
-					"ring": 1,
-					"pos": {"x": 0.95, "y": 0.55, "z": 0.5},
-					"rot": {"z": -30},
-					"links": [
-						"base",
-						"large-1"
-					]
-				},
-				"small-2": {
-					"ring": 1,
-					"pos": {"x": 0.95, "y": -0.55, "z": 0.5},
-					"rot": {"z": 30},
-					"links": [
-						"base",
-						"large-2"
-					]
-				},
-				"small-3": {
-					"ring": 1,
-					"pos": {"x": 0, "y": -1.1, "z": 0.5},
-					"rot": {"z": 0},
-					"links": [
-						"base",
-						"large-3"
-					]
-				},
-				"small-4": {
-					"ring": 1,
-					"pos": {"x": -0.95, "y": -0.55, "z": 0.5},
-					"rot": {"z": -30},
-					"links": [
-						"base",
-						"large-4"
-					]
-				},
-				"small-5": {
-					"ring": 1,
-					"pos": {"x": -0.95, "y": 0.55, "z": 0.5},
-					"rot": {"z": 30},
-					"links": [
-						"base",
-						"large-5"
-					]
-				},
-				"large-0": {
-					"ring": 0,
-					"pos": {"x": 0, "y": 2.2},
-					"links": [
-						null,
-						null,
-						null,
-						"small-0",
-						null,
-						null
-					]
-				},
-				"large-1": {
-					"ring": 0,
-					"pos": {"x": 1.9, "y": 1.1},
-					"rot": {"z": -30},
-					"links": [
-						null,
-						null,
-						null,
-						null,
-						"small-1",
-						null
-					]
-				},
-				"large-2": {
-					"ring": 0,
-					"pos": {"x": 1.9, "y": -1.1},
-					"rot": {"z": 30},
-					"links": [
-						null,
-						null,
-						null,
-						null,
-						null,
-						"small-2"
-					]
-				},
-				"large-3": {
-					"ring": 0,
-					"pos": {"x": 0, "y": -2.2},
-					"rot": {"z": 0},
-					"links": [
-						"small-3",
-						null,
-						null,
-						null,
-						null,
-						null
-					]
-				},
-				"large-4": {
-					"ring": 0,
-					"pos": {"x": -1.9, "y": -1.1},
-					"rot": {"z": -30},
-					"links": [
-						null,
-						"small-4",
-						null,
-						null,
-						null,
-						null
-					]
-				},
-				"large-5": {
-					"ring": 0,
-					"pos": {"x": -1.9, "y": 1.1},
-					"rot": {"z": 30},
-					"links": [
-						null,
-						null,
-						"small-5",
-						null,
-						null,
-						null
-					]
-				}
-			}
+		error: function(data) {
+			console.log(data);
 		}
-	];
-	
-	data = [{"name":"European 4-in-1","file":"euro-4-in-1"},{"name":"Japanese 6-in-1","file":"jap-6-in-1"}];
-	var weaveList = $("#weave");
-	for(var i = 0; i < data.length; i++) {
-		var weave = data[i];
-		// weaves[weave.name] = weave;
-		weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
-	}
-	weaveList.change();
-	
-}
-
-function setupWireGaugeLists() {
-	$(".wire-gauge-system").each(function() {
-		for(var systemName in wireGauges) {
-			var system = wireGauges[systemName];
-			$(this).append("<option value='" + system.name + "'>" + system.name + "</option>");
-		}
-		$(this).change();
 	});
 }
 
@@ -746,6 +317,35 @@ function resetRingFlag(currentRing) {
 	}
 }
 
+function setupRingDivs() {
+	$("div.ring-div").each(function() {
+		// Wire gauge system
+		var wireGaugeSystem = $(this).find(".wire-gauge-system");
+		var selected = "";
+		var geometryIndex = $(this).data("geometry");
+		if(weave.geometries[geometryIndex].defaults && weave.geometries[geometryIndex].defaults.wireSystem) {
+			selected = weave.geometries[geometryIndex].defaults.wireSystem;
+		}
+		for(var systemName in wireGauges) {
+			var system = wireGauges[systemName];
+			wireGaugeSystem.append("<option value='" + system.name + "'" + (system.name === selected ? "selected" : "") + ">" + system.name + "</option>");
+		}
+		wireGaugeSystem.change();
+		
+		// Wire gauge
+		if(weave.geometries[geometryIndex].defaults && weave.geometries[geometryIndex].defaults.wireGauge) {
+			$(this).find(".wire-gauge").val(weave.geometries[geometryIndex].defaults.wireGauge).change();
+		}
+		
+		// ID
+		var innerDiameter = $(this).find(".inner-diameter");
+		if(weave.geometries[geometryIndex].defaults && weave.geometries[geometryIndex].defaults.innerDiameter) {
+			innerDiameter.val(weave.geometries[geometryIndex].defaults.innerDiameter);
+		}
+		innerDiameter.val((innerDiameter.val() * 1).toFixed(2)).change();
+	});
+}
+
 function getSelectedWireGauge(geometryIndex) {
 	return wireGauges[$(".wire-gauge-system").val()]["sizes"][$("div#ring-div-" + geometryIndex + " .wire-gauge").val()];
 }
@@ -756,12 +356,13 @@ function createWireGaugeList(geometryIndex, systemName) {
 	var selectedGauge = gaugeList.val();
 	gaugeList.html("");
 	for(var gauge in system["sizes"]) {
-		gaugeList.append("<option value='" + gauge + "'" + (gauge == selectedGauge ? "selected" : "") + ">" + gauge + " - " + system["sizes"][gauge][units] + " " + units + ".</option>");
+		gaugeList.append("<option value='" + gauge + "'" + (gauge === selectedGauge ? "selected" : "") + ">" + gauge + " - " + system["sizes"][gauge][units] + " " + units + ".</option>");
 	}
 }
 
 function updateAR(geometryIndex) {
-	$("div#ring-div-" + geometryIndex + " .aspect-ratio").val($("div#ring-div-" + geometryIndex + " .inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units]);
+	var ringDiv = $("div#ring-div-" + geometryIndex);
+	ringDiv.find(".aspect-ratio").val((ringDiv.find(".inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units]).toFixed(3));
 }
 
 $(document).ready(function() {
@@ -826,12 +427,10 @@ $(document).ready(function() {
 	$(document).on("change", ".wire-gauge", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		updateAR(ringDiv.data("geometry"));
-		updateRings(ringDiv.data("geometry"));
+		updates.add(ringDiv.data("geometry"));
 	});
 	
 	$(document).on("change", "#weave", function() {
-		// weave = weaves[$(this).val()];
-		
 		$.ajax({
 			url: "https://e-maille.appspot.com/data/getweave?name=" + $(this).val(),
 			dataType: "json",
@@ -842,17 +441,7 @@ $(document).ready(function() {
 				for(var i = 0; i < weave.geometries.length; i++) {
 					outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
 				}
-				setupWireGaugeLists();
-				createRings();
-			},
-			error: function(data) {
-				weave = JSON.parse(data.responseText.substring(3));
-				$("div.ring-div").remove();
-				var outerDiv = $("div#ring-div-div");
-				for(var i = 0; i < weave.geometries.length; i++) {
-					outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
-				}
-				setupWireGaugeLists();
+				setupRingDivs();
 				createRings();
 			}
 		});
@@ -861,13 +450,13 @@ $(document).ready(function() {
 	$(document).on("change", ".inner-diameter", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		updateAR(ringDiv.data("geometry"));
-		updateRings(ringDiv.data("geometry"));
+		updates.add(ringDiv.data("geometry"));
 	});
 	
 	$(document).on("change", ".aspect-ratio", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		ringDiv.find(".inner-diameter").val($(this).val() * getSelectedWireGauge()[units]);
-		updateRings(ringDiv.data("geometry"));
+		updates.add(ringDiv.data("geometry"));
 	});
 	
 	// Switch unit-based inputs between in. and mm.
@@ -875,17 +464,19 @@ $(document).ready(function() {
 		units = $(this).val();
 		if(units === "in") {
 			$("input.unit-field").each(function() {
-				$(this).val($(this).val() / 25.4);
+				$(this).val(($(this).val() / 25.4).toFixed(2));
 			});
 			scale *= 25.4;
 		}
 		else {
 			$("input.unit-field").each(function() {
-				$(this).val($(this).val() * 25.4);
+				$(this).val(($(this).val() * 25.4).toFixed(2));
 			});
 			scale /= 25.4;
 		}
-		createWireGaugeList($("#wire-gauge-system").val());
+		$("div.ring-div").each(function() {
+			createWireGaugeList($(this).data("geometry"), $(this).find(".wire-gauge-system").val());
+		});		
 	});
 	
 	loadStaticData();
