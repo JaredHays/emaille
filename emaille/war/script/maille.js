@@ -136,11 +136,13 @@ function Ring(ringID, basePos) {
 	
 	this.nodeIndex = nodeIndex;
 	this.nodeID = "ring-" + nodeIndex;
+	this.mesh.nodeID = this.nodeID;
 	ringGraph.setNode(this.nodeID, this);
 	nodeIndex++;
 }
 
 function linkRings(currentRing, frustum) {
+	console.log("linking for ring: " + currentRing.nodeID);
 	// Stop once current ring is no longer visible on the canvas
 	currentRing.mesh.updateMatrixWorld();
 	if(!currentRing.isInCamera(frustum) || scene.children.length > 25) {
@@ -163,7 +165,7 @@ function linkRings(currentRing, frustum) {
 	// Populate ring map with existing rings
 	var rings = {"base": currentRing};
 	var addedNewRing = true;
-	while(addedNewRing) {
+	// while(addedNewRing) {
 		addedNewRing = false;
 		for(var ringID in rings) {
 			// console.log("ring: " + rings[ringID].nodeID);
@@ -177,15 +179,17 @@ function linkRings(currentRing, frustum) {
 						continue;
 					
 					var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
-					var as = typeof linkedRIngID === "object" ? linkedRingID.as : linkedRingID;
+					var as = typeof linkedRingID === "object" ? linkedRingID.as : linkedRingID;
 					// linkedRing.ringID = structure[ringID]["links"][i];
 					// Add ring to map
-					if(!(id in rings)) {
-						var edges = ringGraph.outEdges(rings[ringID].nodeID).filter(function(edge) {return edge.name === id;});
+					if(!(as in rings)) {
+						var edges = ringGraph.outEdges(rings[ringID].nodeID).filter(function(edge) {return edge.name === as;});
 						if(edges.length > 0) {
 							var linkedRing = ringGraph.node(edges[0].w);
-							rings[id] = linkedRing;
+							rings[as] = linkedRing;
 							addedNewRing = true;
+							console.log("adding " + edges[0].w + " as " + as);
+							// console.log(edges);
 						}
 						// console.log("adding ring: " + linkedRing.nodeID);
 					}
@@ -195,7 +199,7 @@ function linkRings(currentRing, frustum) {
 			// If this ring has an edge to another ring, add that ring
 			// to the dictionary
 		}
-	} 
+	// } 
 	// Establish any missing links
 	for(var ringID in rings) {
 		for(var i = 0; i < structure[ringID].links.length; i++) {
@@ -203,15 +207,15 @@ function linkRings(currentRing, frustum) {
 			if(!linkedRingID)
 				continue;
 			var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
-			var as = typeof linkedRIngID === "object" ? linkedRingID.as : linkedRingID;
+			var as = typeof linkedRingID === "object" ? linkedRingID.as : linkedRingID;
 			// Found the ring that should be in links[i]
 			if(id in rings) {
 				// rings[ringID].links[i] = rings[linkedRingID];
-			
+				// console.log(rings[ringID]);
 				// Add edges
 				ringGraph
-					.setEdge(rings[ringID].nodeID, rings[linkedRingID].nodeID, as, as)
-					.setEdge(rings[linkedRingID].nodeID, rings[ringID].nodeID, ringID, ringID)
+					.setEdge(rings[ringID].nodeID, rings[id].nodeID, as, as)
+					// .setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
 					;
 			}
 		}
@@ -235,19 +239,21 @@ function linkRings(currentRing, frustum) {
 			if(!linkedRingID)
 				continue;
 			var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
-			var as = typeof linkedRIngID === "object" ? linkedRingID.as : linkedRingID;
+			var as = typeof linkedRingID === "object" ? linkedRingID.as : linkedRingID;
+			// console.log(as);
 			// Found the ring that should be in links[i]
 			if(id in rings) {
 				// rings[ringID].links[i] = rings[linkedRingID];
-				
+				// console.log("connecting " + rings[ringID].nodeID + " -> " + rings[id].nodeID + " as " + as + ". ringID: " + ringID + ", id: " + id + ", i: " + i);
 				// Add edges
 				ringGraph
 					.setEdge(rings[ringID].nodeID, rings[id].nodeID, as, as)
-					.setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
+					// .setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
 					;
 			}
 		}
 	}
+	// console.log(rings);
 	
 	// Don't recurse if no new rings were added this pass
 	if(!addedNewRing)
@@ -256,7 +262,7 @@ function linkRings(currentRing, frustum) {
 	// Find new base rings and recurse
 	for(var ringID in rings) {		
 		var ringIndex = structure[ringID].ring;
-		if(ringID != baseID && weave.rings[ringIndex].base) {
+		if(ringID !== baseID && weave.rings[ringIndex].base) {
 			linkRings(rings[ringID], frustum);
 		}
 	}

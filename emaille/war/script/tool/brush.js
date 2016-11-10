@@ -8,9 +8,11 @@ function Brush() {
 Brush.prototype = {
 	onMouseDown: function() {
 		var clicked = getClickedRing();
-		if(clicked !== null)
+		if(clicked !== null) {
+			console.log(clicked.nodeID);
 			scene.remove(clicked);
 			// clicked.material.color = new THREE.Color(ringColor.val());
+		}
 	},
 
 	onMouseUp: function() {
