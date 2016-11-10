@@ -37,7 +37,7 @@ var ringDiv;
 
 var updates = new Set();
 
-var rings;// = new graphlib.Graph();
+var ringGraph;// = new graphlib.Graph();
 var nodeIndex;// = 0;
 
 var mouse = {
@@ -120,8 +120,8 @@ function Ring(ringID, basePos) {
 	this.mesh.position.z = -50;
 	this.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
 	this.updated = false;
-	this.links = new Array(ringData.links);	
-	this.ringID = ringID;
+	// this.links = new Array(ringData.links);	
+	// this.ringID = ringID;
 	
 	this.isInCamera = function(frustum) {
 		if(!frustum) {
@@ -135,7 +135,8 @@ function Ring(ringID, basePos) {
 	scene.add(this.mesh);
 	
 	this.nodeIndex = nodeIndex;
-	rings.setNode("ring-" + nodeIndex, this);
+	this.nodeID = "ring-" + nodeIndex;
+	ringGraph.setNode(this.nodeID, this);
 	nodeIndex++;
 }
 
@@ -146,7 +147,7 @@ function linkRings(currentRing, frustum) {
 		return;
 	}
 	
-	var structure = weave["structure"];
+	var structure = weave.structure;
 	// Get ID of base ring in pattern
 	var baseID;
 	for(var ringID in structure) {
@@ -157,7 +158,7 @@ function linkRings(currentRing, frustum) {
 	}
 	if(!baseID)
 		return;
-	currentRing.ringID = baseID;
+	// currentRing.ringID = baseID;
 	
 	// Populate ring map with existing rings
 	var rings = {"base": currentRing};
@@ -165,29 +166,53 @@ function linkRings(currentRing, frustum) {
 	while(addedNewRing) {
 		addedNewRing = false;
 		for(var ringID in rings) {
-			// console.log("ring: " + ringID);
-			for(var i = 0; i < rings[ringID].links.length; i++) {
-				var linkedRing = rings[ringID].links[i];
-				if(linkedRing) {
+			// console.log("ring: " + rings[ringID].nodeID);
+			for(var i = 0; i < structure[ringID].links.length; i++) {
+				// var linkedRing = rings[ringID].links[i];
+				// if(linkedRing) {
 					// Update ring ID for current base
-					linkedRing.ringID = structure[ringID]["links"][i];
+					var linkedRingID = structure[ringID].links[i];
+					
+					if(!linkedRingID)
+						continue;
+					
+					var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
+					var as = typeof linkedRIngID === "object" ? linkedRingID.as : linkedRingID;
+					// linkedRing.ringID = structure[ringID]["links"][i];
 					// Add ring to map
-					if(linkedRing.ringID && !(linkedRing.ringID in rings)) {
-						rings[linkedRing.ringID] = linkedRing;
-						addedNewRing = true;
-						// console.log("adding ring: " + linkedRing.ringID);
+					if(!(id in rings)) {
+						var edges = ringGraph.outEdges(rings[ringID].nodeID).filter(function(edge) {return edge.name === id;});
+						if(edges.length > 0) {
+							var linkedRing = ringGraph.node(edges[0].w);
+							rings[id] = linkedRing;
+							addedNewRing = true;
+						}
+						// console.log("adding ring: " + linkedRing.nodeID);
 					}
-				}
+				// }
 			}
+				
+			// If this ring has an edge to another ring, add that ring
+			// to the dictionary
 		}
 	} 
 	// Establish any missing links
 	for(var ringID in rings) {
-		for(var i = 0; i < rings[ringID].links.length; i++) {
-			var linkedRingID = structure[ringID]["links"][i];
+		for(var i = 0; i < structure[ringID].links.length; i++) {
+			var linkedRingID = structure[ringID].links[i];
+			if(!linkedRingID)
+				continue;
+			var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
+			var as = typeof linkedRIngID === "object" ? linkedRingID.as : linkedRingID;
 			// Found the ring that should be in links[i]
-			if(!rings[ringID].links[i] && linkedRingID in rings) {
-				rings[ringID].links[i] = rings[linkedRingID];
+			if(id in rings) {
+				// rings[ringID].links[i] = rings[linkedRingID];
+			
+				// Add edges
+				ringGraph
+					.setEdge(rings[ringID].nodeID, rings[linkedRingID].nodeID, as, as)
+					.setEdge(rings[linkedRingID].nodeID, rings[ringID].nodeID, ringID, ringID)
+					;
 			}
 		}
 	}
@@ -205,11 +230,21 @@ function linkRings(currentRing, frustum) {
 	}
 	// Establish any missing links
 	for(var ringID in rings) {
-		for(var i = 0; i < rings[ringID].links.length; i++) {
-			var linkedRingID = structure[ringID]["links"][i];
+		for(var i = 0; i < structure[ringID].links.length; i++) {
+			var linkedRingID = structure[ringID].links[i];
+			if(!linkedRingID)
+				continue;
+			var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
+			var as = typeof linkedRIngID === "object" ? linkedRingID.as : linkedRingID;
 			// Found the ring that should be in links[i]
-			if(!rings[ringID].links[i] && linkedRingID in rings) {
-				rings[ringID].links[i] = rings[linkedRingID];
+			if(id in rings) {
+				// rings[ringID].links[i] = rings[linkedRingID];
+				
+				// Add edges
+				ringGraph
+					.setEdge(rings[ringID].nodeID, rings[id].nodeID, as, as)
+					.setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
+					;
 			}
 		}
 	}
@@ -220,8 +255,8 @@ function linkRings(currentRing, frustum) {
 	
 	// Find new base rings and recurse
 	for(var ringID in rings) {		
-		var ringIndex = structure[ringID]["ring"];
-		if(ringID != baseID && weave["rings"][ringIndex].base) {
+		var ringIndex = structure[ringID].ring;
+		if(ringID != baseID && weave.rings[ringIndex].base) {
 			linkRings(rings[ringID], frustum);
 		}
 	}
@@ -233,7 +268,7 @@ function createRings() {
 	
 	var t0 = performance.now();
 	
-	rings = new graphlib.Graph();
+	ringGraph = new graphlib.Graph({"directed": true, "multigraph": true});
 	nodeIndex = 0;
 	
 	// Keep children 0, 1, and 2: camera and lights
@@ -261,10 +296,10 @@ function createRings() {
 	
 	linkRings(currentRing, frustum, 0);
 	
-	console.log(scene.children.length);
+	console.log("children: " + scene.children.length);
 	
 	var t1 = performance.now();
-	console.log(t1 - t0);
+	console.log("creation time: " + (t1 - t0).toFixed(2));
 }
 
 function updateRing(currentRing, geometryIndex) {
@@ -309,10 +344,10 @@ function updateRings(geometryIndex) {
 	
 	resetRingFlag(currentRing);
 	
-	console.log(scene.children.length);
+	console.log("children: " + scene.children.length);
 	
 	var t1 = performance.now();
-	console.log(t1 - t0);
+	console.log("update time: " + (t1 - t0).toFixed(2));
 }
 
 function resetRingFlag(currentRing) {
