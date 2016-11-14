@@ -28,17 +28,14 @@ var scale = 100;
 var radialSegments = 16;
 var tubularSegments = 100;
 
-var duration = 5000; // ms
-var currentTime = Date.now();
-
 var raycaster = new THREE.Raycaster();
 
 var ringDiv;
 
 var updates = new Set();
 
-var ringGraph;// = new graphlib.Graph();
-var nodeIndex;// = 0;
+var ringGraph;
+var nodeIndex;
 
 var mouse = {
 	down: false,
@@ -78,30 +75,30 @@ function loadStaticData() {
 				wireGauges[system.name] = system;
 			}
 			setupRingDivs();
-		}
-	});
-	$.ajax({
-		url: "https://e-maille.appspot.com/data/getweaveslist",
-		dataType: "json",
-		success: function(data) {
-			var weaveList = $("#weave");
-			for(var i = 0; i < data.length; i++) {
-				var weave = data[i];
-				weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
-			}
-			weaveList.change();
-		},
-		error: function(data) {
-			console.log(data);
+			$.ajax({
+				url: "https://e-maille.appspot.com/data/getweaveslist",
+				dataType: "json",
+				success: function(data) {
+					var weaveList = $("#weave");
+					for(var i = 0; i < data.length; i++) {
+						var weave = data[i];
+						weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
+					}
+					weaveList.change();
+				},
+				error: function(data) {
+					console.log(data);
+				}
+			});
 		}
 	});
 }
 
 function Ring(ringID, basePos) {
-	var structureData = weave["structure"][ringID];
-	this.ringIndex = structureData["ring"];
-	var ringData = weave["rings"][this.ringIndex];
-	this.geometryIndex = ringData["geometry"];
+	var structureData = weave.structure[ringID];
+	this.ringIndex = structureData.ring;
+	var ringData = weave.rings[this.ringIndex];
+	this.geometryIndex = ringData.geometry;
 	this.mesh = new THREE.Mesh(geometries[this.geometryIndex], baseMaterial.clone());
 	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
 	if(structureData.rot) {
@@ -120,8 +117,6 @@ function Ring(ringID, basePos) {
 	this.mesh.position.z = -50;
 	this.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
 	this.updated = false;
-	// this.links = new Array(ringData.links);	
-	// this.ringID = ringID;
 	
 	this.isInCamera = function(frustum) {
 		if(!frustum) {
@@ -141,18 +136,20 @@ function Ring(ringID, basePos) {
 	nodeIndex++;
 }
 
+var linkTime = 0;
 function linkRings(currentRing, frustum) {
-//	console.log("linking for ring: " + currentRing.nodeID);
 	// Stop once current ring is no longer visible on the canvas
 	currentRing.mesh.updateMatrixWorld();
-	if(!currentRing.isInCamera(frustum) || scene.children.length > 9) {
+	if(!currentRing.isInCamera(frustum)) {
 		return;
 	}
 	
+	var ringID;
 	var structure = weave.structure;
+	var linkPaths = weave.linkPaths;
 	// Get ID of base ring in pattern
 	var baseID;
-	for(var ringID in structure) {
+	for(ringID in structure) {
 		if(structure[ringID].base) {
 			baseID = ringID;
 			break;
@@ -160,71 +157,70 @@ function linkRings(currentRing, frustum) {
 	}
 	if(!baseID)
 		return;
-	// currentRing.ringID = baseID;
+	
+	var edgeFinder = function(edge) {return edge.name === as;};
 	
 	// Populate ring map with existing rings
 	var rings = {"base": currentRing};
-	var addedNewRing = true;
-	// while(addedNewRing) {
-		addedNewRing = false;
-		for(var ringID in rings) {
-			// console.log("ring: " + rings[ringID].nodeID);
-			for(var i = 0; i < structure[ringID].links.length; i++) {
-				// var linkedRing = rings[ringID].links[i];
-				// if(linkedRing) {
-					// Update ring ID for current base
-					var linkedRingID = structure[ringID].links[i];
-					
-					if(!linkedRingID)
-						continue;
-					
-					var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
-					var as = typeof linkedRingID === "object" ? linkedRingID.as : linkedRingID;
-					// linkedRing.ringID = structure[ringID]["links"][i];
-					// Add ring to map
-					if(!(as in rings)) {
-						var edges = ringGraph.outEdges(rings[ringID].nodeID).filter(function(edge) {return edge.name === as;});
-						if(edges.length > 0) {
-							var linkedRing = ringGraph.node(edges[0].w);
-							rings[as] = linkedRing;
-							addedNewRing = true;
-//							console.log("adding " + edges[0].w + " as " + as);
-							// console.log(edges);
-						}
-						// console.log("adding ring: " + linkedRing.nodeID);
-					}
-				// }
+	for(ringID in rings) {
+		if(!("links" in structure[ringID]))
+			continue;
+		
+		// Search for linked rings
+		for(var i = 0; i < structure[ringID].links.length; i++) {
+			var linkedRingID = structure[ringID].links[i];
+			
+			if(!linkedRingID)
+				continue;
+			
+			var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
+			var as = typeof linkedRingID === "object" ? linkedRingID.as : linkedRingID;
+
+			// Add ring to map
+			if(!(as in rings)) {
+				var edges = ringGraph.outEdges(rings[ringID].nodeID).filter(edgeFinder);
+				if(edges.length > 0) {
+					var linkedRing = ringGraph.node(edges[0].w);
+					rings[as] = linkedRing;
+				}
 			}
-				
-			// If this ring has an edge to another ring, add that ring
-			// to the dictionary
 		}
-	// } 
-	// Establish any missing links
-//	for(var ringID in rings) {
-//		for(var i = 0; i < structure[ringID].links.length; i++) {
-//			var linkedRingID = structure[ringID].links[i];
-//			if(!linkedRingID)
-//				continue;
-//			var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
-//			var as = typeof linkedRingID === "object" ? linkedRingID.as : linkedRingID;
-//			// Found the ring that should be in links[i]
-//			if(id in rings) {
-//				// rings[ringID].links[i] = rings[linkedRingID];
-//				// console.log(rings[ringID]);
-//				// Add edges
-//				ringGraph
-////					.setEdge(rings[ringID].nodeID, rings[id].nodeID, as, as)
-//					// .setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
-//					;
-//			}
-//		}
-//	}
+	}
+		
 	
-	addedNewRing = false;
+	// Find distant rings that are actually linked
+	var t0 = performance.now();
+	// edgeFinder = function(edge) {return edge.name === path[i];};
+	for(var linkID in linkPaths) {
+		// Skip existing links
+		if(linkID in rings) 
+			continue;
+		
+		// Try each path to potential links
+		linkPaths[linkID].forEach(function(path) {
+			var validPath = true;
+			var lastRing = currentRing;
+			// Check each step in the path
+			for(var i = 0; validPath && i < path.length; i++) {
+				// var as = path[i];
+				var edges = ringGraph.outEdges(lastRing.nodeID).filter(function(edge) {return edge.name === path[i];});
+				validPath = validPath && edges.length > 0;
+				if(validPath) {
+					lastRing = ringGraph.node(edges[0].w);
+				}
+			}
+			// Followed path to the end, establish link
+			if(validPath) {
+				ringGraph.setEdge(currentRing.nodeID, lastRing.nodeID, linkID, linkID);
+				rings[linkID] = lastRing;
+			}
+		});
+	}
+	linkTime += (performance.now() - t0);
 	
 	// Search for rings that need to be created
-	for(var ringID in structure) {
+	var addedNewRing = false;
+	for(ringID in structure) {
 		// Ring missing from current set
 		if(!(ringID in rings)) {
 			var ring = new Ring(ringID, currentRing.mesh.position);
@@ -233,34 +229,30 @@ function linkRings(currentRing, frustum) {
 		}
 	}
 	// Establish any missing links
-	for(var ringID in rings) {
+	for(ringID in rings) {
+		if(!("links" in structure[ringID]))
+			continue;
+			
 		for(var i = 0; i < structure[ringID].links.length; i++) {
 			var linkedRingID = structure[ringID].links[i];
 			if(!linkedRingID)
 				continue;
 			var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
 			var as = typeof linkedRingID === "object" ? linkedRingID.as : linkedRingID;
-			// console.log(as);
 			// Found the ring that should be in links[i]
-			if(id in rings) {
-				// rings[ringID].links[i] = rings[linkedRingID];
-				// console.log("connecting " + rings[ringID].nodeID + " -> " + rings[id].nodeID + " as " + as + ". ringID: " + ringID + ", id: " + id + ", i: " + i);
-				// Add edges
-				ringGraph
-					.setEdge(rings[ringID].nodeID, rings[id].nodeID, as, as)
-//					.setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
-					;
+			if(id in rings && !ringGraph.hasEdge(rings[ringID].nodeID, rings[id].nodeID, as)) {
+				// Add graph edge
+				ringGraph.setEdge(rings[ringID].nodeID, rings[id].nodeID, as, as);
 			}
 		}
 	}
-	// console.log(rings);
 	
 	// Don't recurse if no new rings were added this pass
 	if(!addedNewRing)
 		return;
 	
 	// Find new base rings and recurse
-	for(var ringID in rings) {		
+	for(ringID in rings) {		
 		var ringIndex = structure[ringID].ring;
 		if(ringID !== baseID && weave.rings[ringIndex].base) {
 			linkRings(rings[ringID], frustum);
@@ -269,7 +261,7 @@ function linkRings(currentRing, frustum) {
 }
 
 function createRings() {
-	if(!weave || Object.keys(wireGauges).length == 0)
+	if(!weave || Object.keys(wireGauges).length === 0)
 		return;
 	
 	var t0 = performance.now();
@@ -296,15 +288,16 @@ function createRings() {
 	// Setup for the in-camera test
 	var frustum = new THREE.Frustum();
 
-	// make sure the camera matrix is updated
+	// Make sure the camera matrix is updated
 	camera.updateMatrixWorld(); 
 	frustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 	
-	linkRings(currentRing, frustum, 0);
-	
-	console.log("children: " + scene.children.length);
+	linkTime = 0;
+	linkRings(currentRing, frustum);
 	
 	var t1 = performance.now();
+	console.log("children: " + scene.children.length);
+	console.log("link time: " + linkTime.toFixed(2));
 	console.log("creation time: " + (t1 - t0).toFixed(2));
 }
 
@@ -327,11 +320,11 @@ function updateRing(currentRing, geometryIndex) {
 }
 
 function updateRings(geometryIndex) {
-	if(!weave || Object.keys(wireGauges).length == 0)
+	if(!weave || Object.keys(wireGauges).length === 0)
 		return;
 	
-	// No rings to update, create rings
-	if(head == null) {
+	// No rings to update, create rings instead
+	if(head === null) {
 		createRings();
 		return;
 	}
@@ -398,7 +391,7 @@ function setupRingDivs() {
 }
 
 function getSelectedWireGauge(geometryIndex) {
-	return wireGauges[$(".wire-gauge-system").val()]["sizes"][$("div#ring-div-" + geometryIndex + " .wire-gauge").val()];
+	return wireGauges[$(".wire-gauge-system").val()].sizes[$("div#ring-div-" + geometryIndex + " .wire-gauge").val()];
 }
 
 function createWireGaugeList(geometryIndex, systemName) {
@@ -406,8 +399,8 @@ function createWireGaugeList(geometryIndex, systemName) {
 	var gaugeList = $("div#ring-div-" + geometryIndex + " .wire-gauge");
 	var selectedGauge = gaugeList.val();
 	gaugeList.html("");
-	for(var gauge in system["sizes"]) {
-		gaugeList.append("<option value='" + gauge + "'" + (gauge === selectedGauge ? "selected" : "") + ">" + gauge + " - " + system["sizes"][gauge][units] + " " + units + ".</option>");
+	for(var gauge in system.sizes) {
+		gaugeList.append("<option value='" + gauge + "'" + (gauge === selectedGauge ? "selected" : "") + ">" + gauge + " - " + system.sizes[gauge][units] + " " + units + ".</option>");
 	}
 }
 
@@ -448,22 +441,22 @@ $(document).ready(function() {
 		e.preventDefault();
 		mouse.down = true;
 		tool.onMouseDown();
-	}
+	};
 	canvas.onmouseup = function(e) {
 		e.preventDefault();
 		mouse.down = false;
 		tool.onMouseUp();
-	}
+	};
 	canvas.onmousemove = function(e) {
 		e.preventDefault();
 		mouse.pos.x = ((e.pageX - canvasPos.left) / canvas.width) * 2 - 1;
 		mouse.pos.y = -((e.pageY - canvasPos.top) / canvas.height) * 2 + 1;
 		tool.onMouseMove();
-	}
+	};
 	canvas.oncontextmenu = function(e) {
 		e.preventDefault();
 //		tool.onMouseDown();
-	}
+	};
 	
 	ringColor.change(function() {
 		
@@ -481,12 +474,14 @@ $(document).ready(function() {
 		updates.add(ringDiv.data("geometry"));
 	});
 	
+	// Weave change: basically recreate the entire thing
 	$(document).on("change", "#weave", function() {
-		$.ajax({
-			url: "https://e-maille.appspot.com/data/getweave?name=" + $(this).val(),
-			dataType: "json",
-			success: function(data) {
-				weave = data;
+		// $.ajax({
+			// url: "https://e-maille.appspot.com/data/getweave?name=" + $(this).val(),
+			// dataType: "json",
+			// success: function(data) {
+				// weave = data;
+				weave = weaves[$(this).val()];
 				$("div.ring-div").remove();
 				var outerDiv = $("div#ring-div-div");
 				for(var i = 0; i < weave.geometries.length; i++) {
@@ -494,8 +489,8 @@ $(document).ready(function() {
 				}
 				setupRingDivs();
 				createRings();
-			}
-		});
+			// }
+		// });
 	});
 	
 	$(document).on("change", ".inner-diameter", function() {
@@ -530,8 +525,7 @@ $(document).ready(function() {
 		});		
 	});
 	
-	loadStaticData();
-	
+	loadStaticData();	
 
 	run();
 });
