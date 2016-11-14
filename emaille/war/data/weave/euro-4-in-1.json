@@ -27,57 +27,59 @@
 				"top-left",
 				"top-right",
 				"bottom-right",
-				"bottom-left"
+				"bottom-left",
+				"left",
+				"right",
+				"top",
+				"bottom"
 			]
 		},
 		"top-left": {
 			"ring": 1,
 			"pos": {"x": -0.7, "y": 1.1},
 			"links": [
-				null,
-				"top",
-				"base",
-				"left"
+				{"id": "top", "as": "top-right"},
+				{"id": "base", "as": "bottom-right"},
+				{"id": "left", "as": "bottom-left"}
 			]
 		},
 		"top-right": {
 			"ring": 1,
 			"pos": {"x": 0.4, "y": 1.1},
 			"links": [
-				"top",
-				null,
-				"right",
-				"base"
+				{"id": "top", "as": "top-left"},
+				{"id": "right", "as": "bottom-right"},
+				{"id": "base", "as": "bottom-left"}
 			]
 		},
 		"bottom-right": {
 			"ring": 1,
 			"pos": {"x": 0.4, "y": -1.1},
 			"links": [
-				"base",
-				"right",
-				null,
-				"bottom"
+				{"id": "base", "as": "top-left"},
+				{"id": "right", "as": "top-right"},
+				{"id": "bottom", "as": "bottom-left"}
 			]
 		},
 		"bottom-left": {
 			"ring": 1,
 			"pos": {"x": -0.7, "y": -1.1},
 			"links": [
-				"left",
-				"base",
-				"bottom",
-				null
+				{"id": "left", "as": "top-left"},
+				{"id": "base", "as": "top-right"},
+				{"id": "bottom", "as": "bottom-right"}
 			]
 		},
 		"left": {
 			"ring": 0,
 			"pos": {"x": -1.1, "y": 0},
 			"links": [
-				null,
 				{"id": "top-left", "as": "top-right"},
 				{"id": "bottom-left", "as": "bottom-right"},
-				null
+				{"id": "base", "as": "right"}
+			],
+			"linkPaths": [
+				
 			]
 		},
 		"right": {
@@ -85,19 +87,17 @@
 			"pos": {"x": 1.1, "y": 0},
 			"links": [
 				{"id": "top-right", "as": "top-left"},
-				null,
-				null,
-				{"id": "bottom-right", "as": "bottom-left"}
+				{"id": "bottom-right", "as": "bottom-left"},
+				{"id": "base", "as": "left"}
 			]
 		},
 		"top": {
 			"ring": 0,
 			"pos": {"x": 0, "y": 2.2},
 			"links": [
-				null,
-				null,
 				{"id": "top-right", "as": "bottom-right"},
-				{"id": "top-left", "as": "bottom-left"}
+				{"id": "top-left", "as": "bottom-left"},
+				{"id": "base", "as": "bottom"}
 			]
 		},
 		"bottom": {
@@ -106,8 +106,7 @@
 			"links": [
 				{"id": "bottom-left", "as": "top-left"},
 				{"id": "bottom-right", "as": "top-right"},
-				null,
-				null
+				{"id": "base", "as": "top"}
 			]
 		}
 	}

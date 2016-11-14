@@ -142,10 +142,10 @@ function Ring(ringID, basePos) {
 }
 
 function linkRings(currentRing, frustum) {
-	console.log("linking for ring: " + currentRing.nodeID);
+//	console.log("linking for ring: " + currentRing.nodeID);
 	// Stop once current ring is no longer visible on the canvas
 	currentRing.mesh.updateMatrixWorld();
-	if(!currentRing.isInCamera(frustum) || scene.children.length > 25) {
+	if(!currentRing.isInCamera(frustum) || scene.children.length > 9) {
 		return;
 	}
 	
@@ -188,7 +188,7 @@ function linkRings(currentRing, frustum) {
 							var linkedRing = ringGraph.node(edges[0].w);
 							rings[as] = linkedRing;
 							addedNewRing = true;
-							console.log("adding " + edges[0].w + " as " + as);
+//							console.log("adding " + edges[0].w + " as " + as);
 							// console.log(edges);
 						}
 						// console.log("adding ring: " + linkedRing.nodeID);
@@ -201,25 +201,25 @@ function linkRings(currentRing, frustum) {
 		}
 	// } 
 	// Establish any missing links
-	for(var ringID in rings) {
-		for(var i = 0; i < structure[ringID].links.length; i++) {
-			var linkedRingID = structure[ringID].links[i];
-			if(!linkedRingID)
-				continue;
-			var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
-			var as = typeof linkedRingID === "object" ? linkedRingID.as : linkedRingID;
-			// Found the ring that should be in links[i]
-			if(id in rings) {
-				// rings[ringID].links[i] = rings[linkedRingID];
-				// console.log(rings[ringID]);
-				// Add edges
-				ringGraph
-					.setEdge(rings[ringID].nodeID, rings[id].nodeID, as, as)
-					// .setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
-					;
-			}
-		}
-	}
+//	for(var ringID in rings) {
+//		for(var i = 0; i < structure[ringID].links.length; i++) {
+//			var linkedRingID = structure[ringID].links[i];
+//			if(!linkedRingID)
+//				continue;
+//			var id = typeof linkedRingID === "object" ? linkedRingID.id : linkedRingID;
+//			var as = typeof linkedRingID === "object" ? linkedRingID.as : linkedRingID;
+//			// Found the ring that should be in links[i]
+//			if(id in rings) {
+//				// rings[ringID].links[i] = rings[linkedRingID];
+//				// console.log(rings[ringID]);
+//				// Add edges
+//				ringGraph
+////					.setEdge(rings[ringID].nodeID, rings[id].nodeID, as, as)
+//					// .setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
+//					;
+//			}
+//		}
+//	}
 	
 	addedNewRing = false;
 	
@@ -248,7 +248,7 @@ function linkRings(currentRing, frustum) {
 				// Add edges
 				ringGraph
 					.setEdge(rings[ringID].nodeID, rings[id].nodeID, as, as)
-					// .setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
+//					.setEdge(rings[id].nodeID, rings[ringID].nodeID, ringID, ringID)
 					;
 			}
 		}
