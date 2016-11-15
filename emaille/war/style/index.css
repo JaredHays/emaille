@@ -28,3 +28,26 @@ div#control-panel .field-div label {
 	display: inline-block;
 	padding-right: 5px;
 }
+
+button.tool-button {
+	width: 32px;
+	height: 32px;
+}
+
+button.tool-button.selected {
+	background-color: #f8f8f8;
+	border-color: darkgray;
+}
+
+button#brush-button {
+	background-image: url("../image/paint-brush.svg");
+}
+
+button#move-button {
+	background-image: url("../image/move.svg");
+}
+
+div#footer {
+	clear: both;
+	font-size: 8pt;
+}

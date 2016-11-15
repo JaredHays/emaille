@@ -41,7 +41,11 @@ var mouse = {
 	down: false,
 	pos: new THREE.Vector2()
 };
-var tool = new Brush();
+var tool;// = new Brush();
+
+Math.clamp = function(num, min, max) {
+  return Math.min(Math.max(num, min), max);
+};
 
 function run() {
 	for(var i = 0; i < updates.length; i++)
@@ -56,13 +60,12 @@ function run() {
 }
 
 function getClickedRing() {
+	var t0 = performance.now();	
 	raycaster.setFromCamera(mouse.pos, camera);
 	var result = raycaster.intersectObjects(scene.children);
-	if (result.length > 0) {
-		return result[0].object;
-	}
-	else
-		return null;
+	result = result.length > 0 ? result[0].object : null;
+	console.log("raycast time: " + (performance.now() - t0).toFixed(2));
+	return result;
 }
 
 function loadStaticData() {
@@ -101,6 +104,12 @@ function Ring(ringID, basePos) {
 	this.geometryIndex = ringData.geometry;
 	this.mesh = new THREE.Mesh(geometries[this.geometryIndex], baseMaterial.clone());
 	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
+	if(basePos)
+		 this.mesh.position.copy(basePos);
+	this.mesh.position.x += full_radius * structureData.pos.x;
+	this.mesh.position.y += full_radius * structureData.pos.y;
+	this.mesh.position.z = -50;
+	this.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
 	if(structureData.rot) {
 		if(structureData.rot.x)
 			this.mesh.rotateX(THREE.Math.degToRad(structureData.rot.x));
@@ -110,12 +119,6 @@ function Ring(ringID, basePos) {
 			this.mesh.rotateZ(THREE.Math.degToRad(structureData.rot.z));
 	}
 	this.mesh.rotateY(THREE.Math.degToRad(ringData.rotation));
-	if(basePos)
-		 this.mesh.position.copy(basePos);
-	this.mesh.position.x += full_radius * structureData.pos.x;
-	this.mesh.position.y += full_radius * structureData.pos.y;
-	this.mesh.position.z = -50;
-	this.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
 	this.updated = false;
 	
 	this.isInCamera = function(frustum) {
@@ -140,7 +143,7 @@ var linkTime = 0;
 function linkRings(currentRing, frustum) {
 	// Stop once current ring is no longer visible on the canvas
 	currentRing.mesh.updateMatrixWorld();
-	if(!currentRing.isInCamera(frustum)) {
+	if(!currentRing.isInCamera(frustum)/*  || scene.children.length > 48 */) {
 		return;
 	}
 	
@@ -415,8 +418,6 @@ $(document).ready(function() {
 	
 	canvas = document.getElementById("canvas");
 	var canvasPos = $(canvas).position();
-	
-	ringColor = $("#ring-color");
 
 	renderer = new THREE.WebGLRenderer({
 		canvas: canvas,
@@ -429,6 +430,8 @@ $(document).ready(function() {
 
 	camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
 	camera.position.z = 50;
+	camera.minZoom = 1 / 3;
+	camera.maxZoom = 2;
 	scene.add(camera);
 
 	var light = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -457,10 +460,34 @@ $(document).ready(function() {
 		e.preventDefault();
 //		tool.onMouseDown();
 	};
+	canvas.onwheel = function(e) {
+		e.preventDefault();
+		// wheelDelta is +/- 120, so scale that by a factor of 6
+		camera.zoom = Math.clamp(camera.zoom + (e.wheelDelta / 720), camera.minZoom, camera.maxZoom);
+		console.log(camera.zoom);
+		camera.updateProjectionMatrix();
+	};
 	
-	ringColor.change(function() {
-		
+	$("#ring-color").change(function() {
+		ringColor = $(this).val();
 	});
+	$("#ring-color").change();
+	
+	$("#brush-button").click(function() {
+		if(!(tool instanceof Brush))
+			tool = new Brush();
+	});
+	
+	$("#move-button").click(function() {
+		if(!(tool instanceof Move)) 
+			tool = new Move();
+	});
+	
+	$("button.tool-button").click(function() {
+		$("button.tool-button").removeClass("selected");
+		$(this).addClass("selected");
+	});
+	$("#move-button").click();
 	
 	$(document).on("change", ".wire-gauge-system", function() {
 		var ringDiv = $(this).closest("div.ring-div");
@@ -482,6 +509,16 @@ $(document).ready(function() {
 			// success: function(data) {
 				// weave = data;
 				weave = weaves[$(this).val()];
+				// Parse coordinate values in case they are expressions
+				var values = "values" in weave ? weave.values : {};
+				for(var ringID in weave.structure) {
+					for(var coord in weave.structure[ringID].pos) {
+						weave.structure[ringID].pos[coord] = Parser.evaluate("" + weave.structure[ringID].pos[coord], values);
+					}
+					for(var coord in weave.structure[ringID].rot) {
+						weave.structure[ringID].rot[coord] = Parser.evaluate("" + weave.structure[ringID].rot[coord], values);
+					}
+				}
 				$("div.ring-div").remove();
 				var outerDiv = $("div#ring-div-div");
 				for(var i = 0; i < weave.geometries.length; i++) {

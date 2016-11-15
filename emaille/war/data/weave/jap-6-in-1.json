@@ -31,6 +31,10 @@
 			"links": 2
 		}
 	],
+	"values": {
+		"radius": 1.5,
+		"largeOffset": 1.5
+	},
 	"structure": {
 		"base": {
 			"base": true,
@@ -42,162 +46,164 @@
 				"small-2",
 				"small-3",
 				"small-4",
-				"small-5"
+				"small-5",
+				"large-0",
+				"large-1",
+				"large-2",
+				"large-3",
+				"large-4",
+				"large-5"
 			]
 		},
 		"small-0": {
 			"ring": 1,
-			"pos": {"x": 0, "y": 1.1, "z": 0.5},
-			"links": [
-				"base",
-				"large-0"
-			]
+			"pos": {"x": 0, "y": "radius", "z": 0.5}
 		},
 		"small-1": {
 			"ring": 1,
-			"pos": {"x": 0.95, "y": 0.55, "z": 0.5},
-			"rot": {"z": -30},
-			"links": [
-				"base",
-				"large-1"
-			]
+			"pos": {"x": "radius * cos(30 * PI / 180)", "y": "radius * sin(30 * PI / 180)", "z": 0.5},
+			"rot": {"z": -60}
 		},
 		"small-2": {
 			"ring": 1,
-			"pos": {"x": 0.95, "y": -0.55, "z": 0.5},
-			"rot": {"z": 30},
-			"links": [
-				"base",
-				"large-2"
-			],
-			"link-paths": [
-				[],
-				[],
-				[],
-				[],
-				[],
-				[]
-			]
+			"pos": {"x": "radius * cos(-30 * PI / 180)", "y": "radius * sin(-30 * PI / 180)", "z": 0.5},
+			"rot": {"z": 60}
 		},
 		"small-3": {
 			"ring": 1,
-			"pos": {"x": 0, "y": -1.1, "z": 0.5},
-			"rot": {"z": 0},
-			"links": [
-				"base",
-				"large-3"
-			]
+			"pos": {"x": 0, "y": "-radius", "z": 0.5},
+			"rot": {"z": 0}
 		},
 		"small-4": {
 			"ring": 1,
-			"pos": {"x": -0.95, "y": -0.55, "z": 0.5},
-			"rot": {"z": -30},
-			"links": [
-				"base",
-				"large-4"
-			]
+			"pos": {"x": "radius * cos(-150 * PI / 180)", "y": "radius * sin(-150 * PI / 180)", "z": 0.5},
+			"rot": {"z": -60}
 		},
 		"small-5": {
 			"ring": 1,
-			"pos": {"x": -0.95, "y": 0.55, "z": 0.5},
-			"rot": {"z": 30},
-			"links": [
-				"base",
-				"large-5"
-			]
+			"pos": {"x": "radius * cos(150 * PI / 180)", "y": "radius * sin(150 * PI / 180)", "z": 0.5},
+			"rot": {"z": -120}
 		},
 		"large-0": {
 			"ring": 0,
-			"pos": {"x": 0, "y": 2.2},
+			"pos": {"x": 0, "y": "largeOffset * radius"},
 			"links": [
-				null,
-				null,
-				null,
-				"small-0",
-				null,
-				null
-			],
-			"link-paths": [
-				[],
-				[],
-				[],
-				[],
-				[],
-				[]
+				{"id": "small-0", "as": "small-3"},
+				{"id": "base", "as": "large-3"}
 			]
 		},
 		"large-1": {
 			"ring": 0,
-			"pos": {"x": 1.9, "y": 1.1},
+			"pos": {"x": "largeOffset * radius * cos(30 * PI / 180)", "y": "largeOffset * radius * sin(30 * PI / 180)"},
 			"rot": {"z": -30},
 			"links": [
-				null,
-				null,
-				null,
-				null,
-				"small-1",
-				null
-			],
-			"link-paths": [
-				[],
-				[],
-				[],
-				[],
-				[],
-				[]
+				{"id": "small-1", "as": "small-4"},
+				{"id": "base", "as": "large-4"}
 			]
 		},
 		"large-2": {
 			"ring": 0,
-			"pos": {"x": 1.9, "y": -1.1},
+			"pos": {"x": "largeOffset * radius * cos(-30 * PI / 180)", "y": "largeOffset * radius * sin(-30 * PI / 180)"},
 			"rot": {"z": 30},
 			"links": [
-				null,
-				null,
-				null,
-				null,
-				null,
-				"small-2"
+				{"id": "small-2", "as": "small-5"},
+				{"id": "base", "as": "large-5"}
 			]
 		},
 		"large-3": {
 			"ring": 0,
-			"pos": {"x": 0, "y": -2.2},
+			"pos": {"x": 0, "y": "-largeOffset * radius"},
 			"rot": {"z": 0},
 			"links": [
-				"small-3",
-				null,
-				null,
-				null,
-				null,
-				null
+				{"id": "small-3", "as": "small-0"},
+				{"id": "base", "as": "large-0"}
 			]
 		},
 		"large-4": {
 			"ring": 0,
-			"pos": {"x": -1.9, "y": -1.1},
+			"pos": {"x": "largeOffset * radius * cos(-150 * PI / 180)", "y": "largeOffset * radius * sin(-150 * PI / 180)"},
 			"rot": {"z": -30},
 			"links": [
-				null,
-				"small-4",
-				null,
-				null,
-				null,
-				null
+				{"id": "small-4", "as": "small-1"},
+				{"id": "base", "as": "large-1"}
 			]
 		},
 		"large-5": {
 			"ring": 0,
-			"pos": {"x": -1.9, "y": 1.1},
+			"pos": {"x": "largeOffset * radius * cos(150 * PI / 180)", "y": "largeOffset * radius * sin(150 * PI / 180)"},
 			"rot": {"z": 30},
 			"links": [
-				null,
-				null,
-				"small-5",
-				null,
-				null,
-				null
+				{"id": "small-5", "as": "small-2"},
+				{"id": "base", "as": "large-2"}
 			]
 		}
+	},
+	"linkPaths": {
+		"large-0": [
+			["large-5", "large-1"],
+			["large-1", "large-5"],
+			["large-4", "large-0", "large-1"],
+			["large-2", "large-0", "large-5"],
+			["large-1", "large-0", "large-4"],
+			["large-5", "large-0", "large-2"]
+		],
+		"large-1": [
+			["large-0", "large-2"],
+			["large-2", "large-0"],
+			["large-5", "large-1", "large-2"],
+			["large-3", "large-1", "large-0"],
+			["large-2", "large-1", "large-5"],
+			["large-0", "large-1", "large-3"]
+		],
+		"large-2": [
+			["large-1", "large-3"],
+			["large-3", "large-1"],
+			["large-0", "large-2", "large-3"],
+			["large-4", "large-2", "large-1"],
+			["large-3", "large-2", "large-0"],
+			["large-1", "large-2", "large-4"]
+		],
+		"large-3": [
+			["large-2", "large-4"],
+			["large-4", "large-2"],
+			["large-1", "large-3", "large-4"],
+			["large-5", "large-3", "large-2"],
+			["large-4", "large-3", "large-1"],
+			["large-2", "large-3", "large-5"]
+		],
+		"large-4": [
+			["large-5", "large-3"],
+			["large-3", "large-5"],
+			["large-0", "large-4", "large-3"],
+			["large-2", "large-4", "large-5"],
+			["large-3", "large-4", "large-0"],
+			["large-5", "large-4", "large-2"]
+		],
+		"large-5": [
+			["large-0", "large-4"],
+			["large-4", "large-0"],
+			["large-1", "large-5", "large-4"],
+			["large-3", "large-5", "large-0"],
+			["large-4", "large-5", "large-1"],
+			["large-0", "large-5", "large-3"]
+		],
+		"small-0": [
+			["large-0", "small-3"]
+		],
+		"small-1": [
+			["large-1", "small-4"]
+		],
+		"small-2": [
+			["large-2", "small-5"]
+		],
+		"small-3": [
+			["large-3", "small-0"]
+		],
+		"small-4": [
+			["large-4", "small-1"]
+		],
+		"small-5": [
+			["large-5", "small-2"]
+		]
 	}
 }

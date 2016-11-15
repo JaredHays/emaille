@@ -9,9 +9,9 @@ Brush.prototype = {
 	onMouseDown: function() {
 		var clicked = getClickedRing();
 		if(clicked !== null) {
-			console.log(clicked.nodeID);
-			scene.remove(clicked);
-			// clicked.material.color = new THREE.Color(ringColor.val());
+			// console.log(clicked.nodeID);
+			// scene.remove(clicked);
+			clicked.material.color = new THREE.Color(ringColor);
 		}
 	},
 
@@ -22,8 +22,8 @@ Brush.prototype = {
 		if(mouse.down) {
 			var clicked = getClickedRing();
 			if(clicked !== null)
-				scene.remove(clicked);
-				// clicked.material.color = new THREE.Color(ringColor.val());
+				// scene.remove(clicked);
+				clicked.material.color = new THREE.Color(ringColor);
 		}
 	}
 };
