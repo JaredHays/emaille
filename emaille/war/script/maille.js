@@ -21,6 +21,7 @@ var weave = null;
 
 var geometries = [];
 var baseMaterial = new THREE.MeshStandardMaterial({color: "magenta"});
+var ringEnabledFlags;
 
 var head = null;
 
@@ -37,19 +38,22 @@ var updates = new Set();
 var ringGraph;
 var nodeIndex;
 
+var edgeRings = new Set();
+
 var mouse = {
 	down: false,
 	pos: new THREE.Vector2()
 };
-var tool;// = new Brush();
+var tool;
 
 Math.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
 };
 
 function run() {
-	for(var i = 0; i < updates.length; i++)
-		updateRings(updates[i]);
+	for(var geometryIndex of updates) {
+		updateRings(geometryIndex);
+	}
 	updates.clear();
 	
 	requestAnimationFrame(function() {
@@ -63,7 +67,7 @@ function getClickedRing() {
 	var t0 = performance.now();	
 	raycaster.setFromCamera(mouse.pos, camera);
 	var result = raycaster.intersectObjects(scene.children);
-	result = result.length > 0 ? result[0].object : null;
+	result = result.length > 0 && ringEnabledFlags[ringGraph.node(result[0].object.nodeID).geometryIndex] ? result[0].object : null;
 	console.log("raycast time: " + (performance.now() - t0).toFixed(2));
 	return result;
 }
@@ -144,6 +148,7 @@ function linkRings(currentRing, frustum) {
 	// Stop once current ring is no longer visible on the canvas
 	currentRing.mesh.updateMatrixWorld();
 	if(!currentRing.isInCamera(frustum)/*  || scene.children.length > 48 */) {
+		edgeRings.add(currentRing);
 		return;
 	}
 	
@@ -254,6 +259,8 @@ function linkRings(currentRing, frustum) {
 	if(!addedNewRing)
 		return;
 	
+	edgeRings.delete(currentRing);
+	
 	// Find new base rings and recurse
 	for(ringID in rings) {		
 		var ringIndex = structure[ringID].ring;
@@ -316,9 +323,9 @@ function updateRing(currentRing, geometryIndex) {
 	
 	currentRing.updated = true;
 	
-	for(var i = 0; i < currentRing.links.length; i++) {
-		if(currentRing.links[i])
-			updateRing(currentRing.links[i]);
+	var edges = ringGraph.outEdges(currentRing.nodeID);
+	for(var i = 0; i < edges.length; i++) {
+		updateRing(ringGraph.node(edges[i].w), geometryIndex);
 	}
 }
 
@@ -358,9 +365,9 @@ function resetRingFlag(currentRing) {
 	
 	currentRing.updated = false;
 	
-	for(var i = 0; i < currentRing.links.length; i++) {
-		if(currentRing.links[i])
-			resetRingFlag(currentRing.links[i]);
+	var edges = ringGraph.outEdges(currentRing.nodeID);
+	for(var i = 0; i < edges.length; i++) {
+		resetRingFlag(ringGraph.node(edges[i].w));
 	}
 }
 
@@ -411,12 +418,48 @@ function updateAR(geometryIndex) {
 	var ringDiv = $("div#ring-div-" + geometryIndex);
 	ringDiv.find(".aspect-ratio").val((ringDiv.find(".inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units]).toFixed(3));
 }
+	
+function expandSheet() {
+	// Setup for the in-camera test
+	var frustum = new THREE.Frustum();
+
+	// Make sure the camera matrix is updated
+	camera.updateMatrixWorld(); 
+	frustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+	
+	for(var edgeRing of edgeRings) {
+		linkRings(edgeRing, frustum);
+	}
+}
+
+function setupWeave() {
+	ringEnabledFlags = [];
+	// Parse coordinate values in case they are expressions
+	var values = "values" in weave ? weave.values : {};
+	for(var ringID in weave.structure) {
+		for(var coord in weave.structure[ringID].pos) {
+			weave.structure[ringID].pos[coord] = Parser.evaluate("" + weave.structure[ringID].pos[coord], values);
+		}
+		for(var coord in weave.structure[ringID].rot) {
+			weave.structure[ringID].rot[coord] = Parser.evaluate("" + weave.structure[ringID].rot[coord], values);
+		}
+	}
+	$("div.ring-div").remove();
+	var outerDiv = $("div#ring-div-div");
+	for(var i = 0; i < weave.geometries.length; i++) {
+		outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
+		ringEnabledFlags[i] = true;
+	}
+	setupRingDivs();
+	createRings();
+}
 
 $(document).ready(function() {
 	ringDiv = $("div.ring-div");
 	ringDiv.remove();
 	
 	canvas = document.getElementById("canvas");
+	
 	var canvasPos = $(canvas).position();
 
 	renderer = new THREE.WebGLRenderer({
@@ -424,11 +467,11 @@ $(document).ready(function() {
 		antialias: true
 	});
 
-	renderer.setSize(canvas.width, canvas.height);
+	renderer.setSize(canvas.clientWidth, canvas.height);
 
 	scene = new THREE.Scene();
 
-	camera = new THREE.OrthographicCamera(canvas.width / -2, canvas.width / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
+	camera = new THREE.OrthographicCamera(canvas.clientWidth / -2, canvas.clientWidth / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
 	camera.position.z = 50;
 	camera.minZoom = 1 / 3;
 	camera.maxZoom = 2;
@@ -464,8 +507,9 @@ $(document).ready(function() {
 		e.preventDefault();
 		// wheelDelta is +/- 120, so scale that by a factor of 6
 		camera.zoom = Math.clamp(camera.zoom + (e.wheelDelta / 720), camera.minZoom, camera.maxZoom);
-		console.log(camera.zoom);
+		// console.log(camera.zoom);
 		camera.updateProjectionMatrix();
+		expandSheet();
 	};
 	
 	$("#ring-color").change(function() {
@@ -509,23 +553,7 @@ $(document).ready(function() {
 			// success: function(data) {
 				// weave = data;
 				weave = weaves[$(this).val()];
-				// Parse coordinate values in case they are expressions
-				var values = "values" in weave ? weave.values : {};
-				for(var ringID in weave.structure) {
-					for(var coord in weave.structure[ringID].pos) {
-						weave.structure[ringID].pos[coord] = Parser.evaluate("" + weave.structure[ringID].pos[coord], values);
-					}
-					for(var coord in weave.structure[ringID].rot) {
-						weave.structure[ringID].rot[coord] = Parser.evaluate("" + weave.structure[ringID].rot[coord], values);
-					}
-				}
-				$("div.ring-div").remove();
-				var outerDiv = $("div#ring-div-div");
-				for(var i = 0; i < weave.geometries.length; i++) {
-					outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
-				}
-				setupRingDivs();
-				createRings();
+				setupWeave();
 			// }
 		// });
 	});
@@ -560,6 +588,20 @@ $(document).ready(function() {
 		$("div.ring-div").each(function() {
 			createWireGaugeList($(this).data("geometry"), $(this).find(".wire-gauge-system").val());
 		});		
+	});
+	
+	// Enable/disable rings
+	$(document).on("change", ".ring-enable", function() {
+		var ringDiv = $(this).closest("div.ring-div");
+		ringEnabledFlags[ringDiv.data("geometry")] = $(this).prop("checked");
+		for(var nodeID of ringGraph.nodes()) {
+			if(ringGraph.node(nodeID).geometryIndex === ringDiv.data("geometry")) {
+				// ringGraph.node(nodeID).mesh.material.blending = $(this).prop("checked") ? THREE.NormalBlending : THREE.CustomBlending;
+				ringGraph.node(nodeID).mesh.material.transparent = !$(this).prop("checked");
+				ringGraph.node(nodeID).mesh.material.opacity = $(this).prop("checked") ? 1 : 0.5;
+				// ringGraph.node(nodeID).mesh.material.needsUpdate = true;
+			}
+		}
 	});
 	
 	loadStaticData();	

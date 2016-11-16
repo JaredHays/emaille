@@ -3,13 +3,10 @@
 canvas {
 	display: block;
 	float: left;
-	width: 78%;
 }
 
 div#control-panel {
 	float: left;
-	margin: 1%;
-	width: 18%;
 }
 
 div#control-panel * {
@@ -29,9 +26,15 @@ div#control-panel .field-div label {
 	padding-right: 5px;
 }
 
+div#top-control-div label{
+	margin-left: 0px;
+	margin-right: 10px;
+}
+
 button.tool-button {
 	width: 32px;
 	height: 32px;
+	padding: 0px;
 }
 
 button.tool-button.selected {

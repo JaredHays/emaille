@@ -19,37 +19,46 @@
 </head>
 
 <body>
-	<canvas id="canvas" width="1080" height="720"></canvas>
-	
-	<div id="control-panel">
-		Units: 
-		<input id="units-in" type="radio" name="units" value="in" checked /><label for="units-in">in.</label>
-		<input id="units-mm" type="radio" name="units" value="mm"><label for="units-mm">mm.</label>
-		<br />
+<div class="container">
+	<div class="row">
+		<canvas id="canvas" width="1080" height="720" class="ten columns"></canvas>
 		
-		<select id="weave"></select>
-		<br />
-		
-		<div id="ring-div-div">
-			<div class="ring-div">
-				<select class="wire-gauge-system"></select><select class="wire-gauge"></select>
+		<div id="control-panel" class="row two columns">
+			<div id="top-control-div" class="row">
+				Units: <br />
+				<input id="units-in" class="two columns" type="radio" name="units" value="in" checked /><label for="units-in" class="one column">in.</label>
+				<input id="units-mm" class="two columns" type="radio" name="units" value="mm"><label for="units-mm" class="one column">mm.</label>
 				<br />
 				
-				<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="number" value="1" min="0" step="0.001" /></div>
-				
-				<div class="field-div"><label for="aspect-ratio">AR: </label><input class="aspect-ratio" type="number" value="1" min="0" step="0.001" /></div>
+				<select id="weave"></select>
+				<br />
+			</div>
+			
+			<div id="tool-div">
+				<button id="brush-button" class="tool-button" /></button>
+				<button id="move-button" class="tool-button" /></button>
+				<br />
+				<input id="ring-color" type="color" value="#FFFFFF" />
+				<br />
+			</div>
+			
+			<div id="ring-div-div">
+				<div class="ring-div">
+					<input class="ring-enable" type="checkbox" checked />
+					<select class="wire-gauge-system"></select><select class="wire-gauge"></select>
+					<br />
+					
+					<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="number" value="1" min="0" step="0.001" /></div>
+					
+					<div class="field-div"><label for="aspect-ratio">AR: </label><input class="aspect-ratio" type="number" value="1" min="0" step="0.001" /></div>
+				</div>
 			</div>
 		</div>
-		
-		<button id="brush-button" class="tool-button" /></button>
-		<button id="move-button" class="tool-button" /></button>
-		<br />
-		<input id="ring-color" type="color" value="#FFFFFF" />
-		<br />
 	</div>
 	
 	<div id="footer">
 		<div>Icons made by <a href="http://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a>. Licensed under <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
 	</div>
+</div>
 </body>
 </html>
