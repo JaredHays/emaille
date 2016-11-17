@@ -37,8 +37,7 @@ var updates = new Set();
 
 var ringGraph;
 var nodeIndex;
-
-var edgeRings = new Set();
+var edgeRings;
 
 var mouse = {
 	down: false,
@@ -147,7 +146,10 @@ var linkTime = 0;
 function linkRings(currentRing, frustum) {
 	// Stop once current ring is no longer visible on the canvas
 	currentRing.mesh.updateMatrixWorld();
-	if(!currentRing.isInCamera(frustum)/*  || scene.children.length > 48 */) {
+	// if(scene.children.length > 2048)
+		// return;
+	
+	if(!currentRing.isInCamera(frustum)) {
 		edgeRings.add(currentRing);
 		return;
 	}
@@ -165,8 +167,6 @@ function linkRings(currentRing, frustum) {
 	}
 	if(!baseID)
 		return;
-	
-	var edgeFinder = function(edge) {return edge.name === as;};
 	
 	// Populate ring map with existing rings
 	var rings = {"base": currentRing};
@@ -186,7 +186,7 @@ function linkRings(currentRing, frustum) {
 
 			// Add ring to map
 			if(!(as in rings)) {
-				var edges = ringGraph.outEdges(rings[ringID].nodeID).filter(edgeFinder);
+				var edges = ringGraph.outEdges(rings[ringID].nodeID).filter(function(edge) {return edge.name === as;});
 				if(edges.length > 0) {
 					var linkedRing = ringGraph.node(edges[0].w);
 					rings[as] = linkedRing;
@@ -195,22 +195,21 @@ function linkRings(currentRing, frustum) {
 		}
 	}
 		
-	
 	// Find distant rings that are actually linked
 	var t0 = performance.now();
-	// edgeFinder = function(edge) {return edge.name === path[i];};
 	for(var linkID in linkPaths) {
 		// Skip existing links
 		if(linkID in rings) 
 			continue;
 		
 		// Try each path to potential links
-		linkPaths[linkID].forEach(function(path) {
+		for(var path of linkPaths[linkID]) {
+			if(path.length == 0)
+				continue;
 			var validPath = true;
 			var lastRing = currentRing;
 			// Check each step in the path
 			for(var i = 0; validPath && i < path.length; i++) {
-				// var as = path[i];
 				var edges = ringGraph.outEdges(lastRing.nodeID).filter(function(edge) {return edge.name === path[i];});
 				validPath = validPath && edges.length > 0;
 				if(validPath) {
@@ -222,7 +221,7 @@ function linkRings(currentRing, frustum) {
 				ringGraph.setEdge(currentRing.nodeID, lastRing.nodeID, linkID, linkID);
 				rings[linkID] = lastRing;
 			}
-		});
+		}
 	}
 	linkTime += (performance.now() - t0);
 	
@@ -263,7 +262,7 @@ function linkRings(currentRing, frustum) {
 	
 	// Find new base rings and recurse
 	for(ringID in rings) {		
-		var ringIndex = structure[ringID].ring;
+		var ringIndex = rings[ringID].ringIndex;
 		if(ringID !== baseID && weave.rings[ringIndex].base) {
 			linkRings(rings[ringID], frustum);
 		}
@@ -275,15 +274,6 @@ function createRings() {
 		return;
 	
 	var t0 = performance.now();
-	
-	ringGraph = new graphlib.Graph({"directed": true, "multigraph": true});
-	nodeIndex = 0;
-	
-	// Keep children 0, 1, and 2: camera and lights
-	// TODO: store those somewhere instead of using indexes
-	for(var i = scene.children.length - 1; i > 2; i--) {
-		scene.remove(scene.children[i]);
-	}
 	
 	for(var i = 0; i < weave.geometries.length; i++) {
 		var radius = $("div#ring-div-" + i + " .inner-diameter").val() * scale / 2;
@@ -324,8 +314,10 @@ function updateRing(currentRing, geometryIndex) {
 	currentRing.updated = true;
 	
 	var edges = ringGraph.outEdges(currentRing.nodeID);
-	for(var i = 0; i < edges.length; i++) {
-		updateRing(ringGraph.node(edges[i].w), geometryIndex);
+	if(edges) {
+		for(var i = 0; i < edges.length; i++) {
+			updateRing(ringGraph.node(edges[i].w), geometryIndex);
+		}
 	}
 }
 
@@ -366,8 +358,10 @@ function resetRingFlag(currentRing) {
 	currentRing.updated = false;
 	
 	var edges = ringGraph.outEdges(currentRing.nodeID);
-	for(var i = 0; i < edges.length; i++) {
-		resetRingFlag(ringGraph.node(edges[i].w));
+	if(edges) {
+		for(var i = 0; i < edges.length; i++) {
+			resetRingFlag(ringGraph.node(edges[i].w));
+		}
 	}
 }
 
@@ -433,6 +427,26 @@ function expandSheet() {
 }
 
 function setupWeave() {
+	camera.position.x = 0;
+	camera.position.y = 0;
+	camera.position.z = 50;
+	camera.zoom = 1;
+	camera.updateMatrixWorld(); 
+	camera.updateProjectionMatrix();
+	
+	ringGraph = new graphlib.Graph({"directed": true, "multigraph": true});
+	nodeIndex = 0;
+	edgeRings = new Set();
+	updates = new Set();
+	
+	// Keep children 0, 1, and 2: camera and lights
+	// TODO: store those somewhere instead of using indexes
+	for(var i = scene.children.length - 1; i > 2; i--) {
+		scene.remove(scene.children[i]);
+	}
+	
+	head = null;
+	
 	ringEnabledFlags = [];
 	// Parse coordinate values in case they are expressions
 	var values = "values" in weave ? weave.values : {};
@@ -451,7 +465,7 @@ function setupWeave() {
 		ringEnabledFlags[i] = true;
 	}
 	setupRingDivs();
-	createRings();
+	// createRings();
 }
 
 $(document).ready(function() {
