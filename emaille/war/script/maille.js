@@ -20,14 +20,15 @@ var wireGauges = {};
 var weave = null;
 
 var geometries = [];
+var materials = [];
 var baseMaterial = new THREE.MeshStandardMaterial({color: "magenta"});
 var ringEnabledFlags;
 
 var head = null;
 
 var scale = 100;
-var radialSegments = 16;
-var tubularSegments = 100;
+var radialSegments = 8;
+var tubularSegments = 64;
 
 var raycaster = new THREE.Raycaster();
 
@@ -55,9 +56,7 @@ function run() {
 	}
 	updates.clear();
 	
-	requestAnimationFrame(function() {
-		run();
-	});
+	requestAnimationFrame(run);
 
 	renderer.render(scene, camera);
 }
@@ -105,7 +104,7 @@ function Ring(ringID, basePos) {
 	this.ringIndex = structureData.ring;
 	var ringData = weave.rings[this.ringIndex];
 	this.geometryIndex = ringData.geometry;
-	this.mesh = new THREE.Mesh(geometries[this.geometryIndex], baseMaterial.clone());
+	this.mesh = new THREE.Mesh(geometries[this.geometryIndex], materials[this.geometryIndex].clone());
 	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
 	if(basePos)
 		 this.mesh.position.copy(basePos);
@@ -122,6 +121,8 @@ function Ring(ringID, basePos) {
 			this.mesh.rotateZ(THREE.Math.degToRad(structureData.rot.z));
 	}
 	this.mesh.rotateY(THREE.Math.degToRad(ringData.rotation));
+	this.mesh.material.transparent = !ringEnabledFlags[this.geometryIndex];
+	this.mesh.material.opacity = ringEnabledFlags[this.geometryIndex] ? 1 : 0.5;
 	this.updated = false;
 	
 	this.isInCamera = function(frustum) {
@@ -279,6 +280,7 @@ function createRings() {
 		var radius = $("div#ring-div-" + i + " .inner-diameter").val() * scale / 2;
 		var tube = getSelectedWireGauge(i)[units] * scale;
 		geometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
+		materials[i] = new THREE.MeshStandardMaterial({color: $("div#ring-div-" + i).find(".default-color").val()});
 	}
 	
 	var currentRing = new Ring("base");
@@ -463,6 +465,7 @@ function setupWeave() {
 	for(var i = 0; i < weave.geometries.length; i++) {
 		outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
 		ringEnabledFlags[i] = true;
+		// updates.add(i);
 	}
 	setupRingDivs();
 	// createRings();
@@ -557,6 +560,18 @@ $(document).ready(function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		updateAR(ringDiv.data("geometry"));
 		updates.add(ringDiv.data("geometry"));
+	});
+	
+	$(document).on("change", ".default-color", function() {
+		var ringDiv = $(this).closest("div.ring-div");
+		var oldColor = materials[ringDiv.data("geometry")].color;
+		var newColor = new THREE.Color($(this).val());
+		materials[ringDiv.data("geometry")].color = newColor;
+		for(var nodeID of ringGraph.nodes()) {
+			if(ringGraph.node(nodeID).geometryIndex === ringDiv.data("geometry") && ringGraph.node(nodeID).mesh.material.color.getHex() === oldColor.getHex()) {
+				ringGraph.node(nodeID).mesh.material.color = newColor;
+			}
+		}
 	});
 	
 	// Weave change: basically recreate the entire thing
