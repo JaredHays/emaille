@@ -34,7 +34,8 @@ var raycaster = new THREE.Raycaster();
 
 var ringDiv;
 
-var updates = new Set();
+var geometryUpdates = new Set();
+var positionUpdate = false;
 
 var ringGraph;
 var nodeIndex;
@@ -51,10 +52,15 @@ Math.clamp = function(num, min, max) {
 };
 
 function run() {
-	for(var geometryIndex of updates) {
-		updateRings(geometryIndex);
+	for(var geometryIndex of geometryUpdates) {
+		updateGeometries(geometryIndex);
 	}
-	updates.clear();
+	geometryUpdates.clear();
+	if(positionUpdate) {
+		updatePositions();
+		expandSheet();
+		positionUpdate = false;
+	}
 	
 	requestAnimationFrame(run);
 
@@ -303,7 +309,7 @@ function createRings() {
 	console.log("creation time: " + (t1 - t0).toFixed(2));
 }
 
-function updateRing(currentRing, geometryIndex) {
+function updateGeometry(currentRing, geometryIndex) {
 	if(currentRing.updated)
 		return;
 	
@@ -318,12 +324,12 @@ function updateRing(currentRing, geometryIndex) {
 	var edges = ringGraph.outEdges(currentRing.nodeID);
 	if(edges) {
 		for(var i = 0; i < edges.length; i++) {
-			updateRing(ringGraph.node(edges[i].w), geometryIndex);
+			updateGeometry(ringGraph.node(edges[i].w), geometryIndex);
 		}
 	}
 }
 
-function updateRings(geometryIndex) {
+function updateGeometries(geometryIndex) {
 	if(!weave || Object.keys(wireGauges).length === 0)
 		return;
 	
@@ -343,14 +349,57 @@ function updateRings(geometryIndex) {
 	var tube = getSelectedWireGauge(geometryIndex)[units] * scale;
 	geometries[geometryIndex] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
 	
-	updateRing(currentRing, geometryIndex);
+	updateGeometry(currentRing, geometryIndex);
 	
 	resetRingFlag(currentRing);
 	
 	console.log("children: " + scene.children.length);
 	
 	var t1 = performance.now();
-	console.log("update time: " + (t1 - t0).toFixed(2));
+	console.log("update geometry time: " + (t1 - t0).toFixed(2));
+}
+
+function updatePosition(currentRing, ringID, basePos) {	
+	if(currentRing.updated)
+		return;
+	
+	var structureData = weave.structure[ringID];
+	var full_radius = currentRing.mesh.geometry.parameters.radius + (currentRing.mesh.geometry.parameters.tube / 2);
+	if(basePos)
+		 currentRing.mesh.position.copy(basePos);
+	currentRing.mesh.position.x += full_radius * structureData.pos.x;
+	currentRing.mesh.position.y += full_radius * structureData.pos.y;
+	currentRing.mesh.position.z = -50;
+	currentRing.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
+	
+	currentRing.updated = true;
+	
+	var edges = ringGraph.outEdges(currentRing.nodeID);
+	if(edges) {
+		for(var i = 0; i < edges.length; i++) {
+			updatePosition(ringGraph.node(edges[i].w), edges[i].name, currentRing.mesh.position);
+		}
+	}
+}
+
+function updatePositions() {
+	var currentRing = head;
+	
+	// Get ID of base ring in pattern
+	var structure = weave.structure;
+	var baseID;
+	for(ringID in structure) {
+		if(structure[ringID].base) {
+			baseID = ringID;
+			break;
+		}
+	}
+	if(!baseID)
+		return;
+	
+	updatePosition(currentRing, "base");
+	
+	resetRingFlag(currentRing);
 }
 
 function resetRingFlag(currentRing) {
@@ -413,6 +462,7 @@ function createWireGaugeList(geometryIndex, systemName) {
 function updateAR(geometryIndex) {
 	var ringDiv = $("div#ring-div-" + geometryIndex);
 	ringDiv.find(".aspect-ratio").val((ringDiv.find(".inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units]).toFixed(3));
+	positionUpdate = true;
 }
 	
 function expandSheet() {
@@ -439,7 +489,7 @@ function setupWeave() {
 	ringGraph = new graphlib.Graph({"directed": true, "multigraph": true});
 	nodeIndex = 0;
 	edgeRings = new Set();
-	updates = new Set();
+	geometryUpdates = new Set();
 	
 	// Keep children 0, 1, and 2: camera and lights
 	// TODO: store those somewhere instead of using indexes
@@ -465,7 +515,7 @@ function setupWeave() {
 	for(var i = 0; i < weave.geometries.length; i++) {
 		outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
 		ringEnabledFlags[i] = true;
-		// updates.add(i);
+		// geometryUpdates.add(i);
 	}
 	setupRingDivs();
 	// createRings();
@@ -524,7 +574,6 @@ $(document).ready(function() {
 		e.preventDefault();
 		// wheelDelta is +/- 120, so scale that by a factor of 6
 		camera.zoom = Math.clamp(camera.zoom + (e.wheelDelta / 720), camera.minZoom, camera.maxZoom);
-		// console.log(camera.zoom);
 		camera.updateProjectionMatrix();
 		expandSheet();
 	};
@@ -559,7 +608,7 @@ $(document).ready(function() {
 	$(document).on("change", ".wire-gauge", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		updateAR(ringDiv.data("geometry"));
-		updates.add(ringDiv.data("geometry"));
+		geometryUpdates.add(ringDiv.data("geometry"));
 	});
 	
 	$(document).on("change", ".default-color", function() {
@@ -590,13 +639,13 @@ $(document).ready(function() {
 	$(document).on("change", ".inner-diameter", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		updateAR(ringDiv.data("geometry"));
-		updates.add(ringDiv.data("geometry"));
+		geometryUpdates.add(ringDiv.data("geometry"));
 	});
 	
 	$(document).on("change", ".aspect-ratio", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		ringDiv.find(".inner-diameter").val($(this).val() * getSelectedWireGauge()[units]);
-		updates.add(ringDiv.data("geometry"));
+		geometryUpdates.add(ringDiv.data("geometry"));
 	});
 	
 	// Switch unit-based inputs between in. and mm.
