@@ -21,7 +21,7 @@ var weave = null;
 
 var geometries = [];
 var materials = [];
-var baseMaterial = new THREE.MeshStandardMaterial({color: "magenta"});
+// var baseMaterial = new THREE.MeshStandardMaterial({color: "magenta"});
 var ringEnabledFlags;
 
 var head = null;
@@ -71,7 +71,7 @@ function getClickedRing() {
 	var t0 = performance.now();	
 	raycaster.setFromCamera(mouse.pos, camera);
 	var result = raycaster.intersectObjects(scene.children);
-	result = result.length > 0 && ringEnabledFlags[ringGraph.node(result[0].object.nodeID).geometryIndex] ? result[0].object : null;
+	result = result.length > 0 && ringEnabledFlags[ringGraph.node(result[0].object.nodeID).geometryIndex] ? ringGraph.node(result[0].object.nodeID) : null;
 	console.log("raycast time: " + (performance.now() - t0).toFixed(2));
 	return result;
 }
@@ -110,7 +110,7 @@ function Ring(ringID, basePos) {
 	this.ringIndex = structureData.ring;
 	var ringData = weave.rings[this.ringIndex];
 	this.geometryIndex = ringData.geometry;
-	this.mesh = new THREE.Mesh(geometries[this.geometryIndex], materials[this.geometryIndex].clone());
+	this.mesh = new THREE.Mesh(geometries[this.geometryIndex], materials[this.geometryIndex]);
 	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
 	if(basePos)
 		 this.mesh.position.copy(basePos);
@@ -422,8 +422,9 @@ function setupRingDivs() {
 		var wireGaugeSystem = $(this).find(".wire-gauge-system");
 		var selected = "";
 		var geometryIndex = $(this).data("geometry");
-		if(weave.geometries[geometryIndex].defaults && weave.geometries[geometryIndex].defaults.wireSystem) {
-			selected = weave.geometries[geometryIndex].defaults.wireSystem;
+		var geometry = weave.geometries[geometryIndex];
+		if(geometry.defaults && geometry.defaults.wireSystem) {
+			selected = geometry.defaults.wireSystem;
 		}
 		for(var systemName in wireGauges) {
 			var system = wireGauges[systemName];
@@ -432,16 +433,31 @@ function setupRingDivs() {
 		wireGaugeSystem.change();
 		
 		// Wire gauge
-		if(weave.geometries[geometryIndex].defaults && weave.geometries[geometryIndex].defaults.wireGauge) {
-			$(this).find(".wire-gauge").val(weave.geometries[geometryIndex].defaults.wireGauge).change();
+		if(geometry.defaults && geometry.defaults.wireGauge) {
+			$(this).find(".wire-gauge").val(geometry.defaults.wireGauge).change();
 		}
 		
 		// ID
 		var innerDiameter = $(this).find(".inner-diameter");
-		if(weave.geometries[geometryIndex].defaults && weave.geometries[geometryIndex].defaults.innerDiameter) {
-			innerDiameter.val(weave.geometries[geometryIndex].defaults.innerDiameter);
+		// innerDiameter.attr("name", "inner-diameter-" + geometryIndex);
+		if(geometry.defaults && geometry.defaults.innerDiameter) {
+			innerDiameter.val(geometry.defaults.innerDiameter);
 		}
+		// $(this).find(".inner-diameter-value").attr("name", "inner-diameter-" + geometryIndex);
+		
+		// AR
+		var aspectRatio = $(this).find(".aspect-ratio");
+		// aspectRatio.attr("name", "aspect-ratio-" + geometryIndex);
+			if(geometry.minAR) {
+				aspectRatio.attr("min", geometry.minAR);
+			}
+			if(geometry.maxAR) {
+				aspectRatio.attr("max", geometry.maxAR);
+			}
+		// $(this).find(".aspect-ratio-value").attr("name", "aspect-ratio-" + geometryIndex);
+		
 		innerDiameter.val((innerDiameter.val() * 1).toFixed(2)).change();
+		aspectRatio.change();
 	});
 }
 
@@ -459,9 +475,19 @@ function createWireGaugeList(geometryIndex, systemName) {
 	}
 }
 
+function getAR(geometryIndex) {
+	return $("div#ring-div-" + geometryIndex).find(".inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units];
+}
+
 function updateAR(geometryIndex) {
 	var ringDiv = $("div#ring-div-" + geometryIndex);
-	ringDiv.find(".aspect-ratio").val((ringDiv.find(".inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units]).toFixed(3));
+	// var aspectRatio = ringDiv.find(".inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units];
+	// if(weave.geometries[geometryIndex].min)
+		// aspectRatio = Math.max(aspectRatio, weave.geometries[geometryIndex].min);
+	// if(weave.geometries[geometryIndex].max)
+		// aspectRatio = Math.min(aspectRatio, weave.geometries[geometryIndex].max);
+	ringDiv.find(".aspect-ratio").val(getAR(geometryIndex).toFixed(3));
+	// ringDiv.find(".inner-diameter").change();
 	positionUpdate = true;
 }
 	
@@ -481,7 +507,7 @@ function expandSheet() {
 function setupWeave() {
 	camera.position.x = 0;
 	camera.position.y = 0;
-	camera.position.z = 50;
+	camera.position.z = 1000;
 	camera.zoom = 1;
 	camera.updateMatrixWorld(); 
 	camera.updateProjectionMatrix();
@@ -538,7 +564,7 @@ $(document).ready(function() {
 
 	scene = new THREE.Scene();
 
-	camera = new THREE.OrthographicCamera(canvas.clientWidth / -2, canvas.clientWidth / 2, canvas.height / 2, canvas.height / -2, 1, 1000);
+	camera = new THREE.OrthographicCamera(canvas.clientWidth / -2, canvas.clientWidth / 2, canvas.height / 2, canvas.height / -2, 1, 10000);
 	camera.position.z = 50;
 	camera.minZoom = 1 / 3;
 	camera.maxZoom = 2;
@@ -559,6 +585,11 @@ $(document).ready(function() {
 		e.preventDefault();
 		mouse.down = false;
 		tool.onMouseUp();
+	
+		// console.log(JSON.stringify(ringGraph.nodes().reduce(function(o, v, i) {
+			// o[i] = ringGraph.node(v);
+			// return o;
+		// }, {})));
 	};
 	canvas.onmousemove = function(e) {
 		e.preventDefault();
@@ -577,6 +608,11 @@ $(document).ready(function() {
 		camera.updateProjectionMatrix();
 		expandSheet();
 	};
+	
+	// $(canvas).focusout(function() {
+		// mouse.down = false;
+		// tool.onMouseUp();
+	// });
 	
 	$("#ring-color").change(function() {
 		ringColor = $(this).val();
@@ -597,7 +633,7 @@ $(document).ready(function() {
 		$("button.tool-button").removeClass("selected");
 		$(this).addClass("selected");
 	});
-	$("#move-button").click();
+	$("#brush-button").click();
 	
 	$(document).on("change", ".wire-gauge-system", function() {
 		var ringDiv = $(this).closest("div.ring-div");
@@ -609,18 +645,12 @@ $(document).ready(function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		updateAR(ringDiv.data("geometry"));
 		geometryUpdates.add(ringDiv.data("geometry"));
+		ringDiv.find(".aspect-ratio").change();
 	});
 	
 	$(document).on("change", ".default-color", function() {
 		var ringDiv = $(this).closest("div.ring-div");
-		var oldColor = materials[ringDiv.data("geometry")].color;
-		var newColor = new THREE.Color($(this).val());
-		materials[ringDiv.data("geometry")].color = newColor;
-		for(var nodeID of ringGraph.nodes()) {
-			if(ringGraph.node(nodeID).geometryIndex === ringDiv.data("geometry") && ringGraph.node(nodeID).mesh.material.color.getHex() === oldColor.getHex()) {
-				ringGraph.node(nodeID).mesh.material.color = newColor;
-			}
-		}
+		materials[ringDiv.data("geometry")].color.setStyle($(this).val());
 	});
 	
 	// Weave change: basically recreate the entire thing
@@ -640,12 +670,20 @@ $(document).ready(function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		updateAR(ringDiv.data("geometry"));
 		geometryUpdates.add(ringDiv.data("geometry"));
+		$(this).next(".inner-diameter-value").val(($(this).val() * 1).toFixed(2));
+	});
+	$(document).on("input", ".inner-diameter", function() {
+		$(this).next(".inner-diameter-value").val(($(this).val() * 1).toFixed(2));
 	});
 	
 	$(document).on("change", ".aspect-ratio", function() {
 		var ringDiv = $(this).closest("div.ring-div");
-		ringDiv.find(".inner-diameter").val($(this).val() * getSelectedWireGauge()[units]);
+		ringDiv.find(".inner-diameter").val($(this).val() * getSelectedWireGauge(ringDiv.data("geometry"))[units]).change();
 		geometryUpdates.add(ringDiv.data("geometry"));
+		$(this).next(".aspect-ratio-value").val(($(this).val() * 1).toFixed(2));
+	});
+	$(document).on("input", ".aspect-ratio", function() {
+		$(this).next(".aspect-ratio-value").val(($(this).val() * 1).toFixed(2));
 	});
 	
 	// Switch unit-based inputs between in. and mm.
@@ -654,12 +692,16 @@ $(document).ready(function() {
 		if(units === "in") {
 			$("input.unit-field").each(function() {
 				$(this).val(($(this).val() / 25.4).toFixed(2));
+				$(this).attr("min", $(this).attr("min") / 25.4);
+				$(this).attr("max", $(this).attr("max") / 25.4);
 			});
 			scale *= 25.4;
 		}
 		else {
 			$("input.unit-field").each(function() {
 				$(this).val(($(this).val() * 25.4).toFixed(2));
+				$(this).attr("min", $(this).attr("min") * 25.4);
+				$(this).attr("max", $(this).attr("max") * 25.4);
 			});
 			scale /= 25.4;
 		}

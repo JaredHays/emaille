@@ -3,7 +3,7 @@ var weaves = {
 		"name": "European 4-in-1",
 		"geometries": [
 			{
-				"min": 2.9
+				"minAR": 2.9
 			}
 		],
 		"rings": [
@@ -132,7 +132,7 @@ var weaves = {
 		"name": "Japanese 6-in-1",
 		"geometries": [
 			{
-				"min": 2.9,
+				"minAR": 2.9,
 				"defaults": {
 					"wireSystem": "AWG",
 					"wireGauge": 16,
@@ -140,7 +140,7 @@ var weaves = {
 				}
 			},
 			{
-				"min": 2.9,
+				"minAR": 2.9,
 				"defaults": {
 					"wireSystem": "SWG",
 					"wireGauge": 16,

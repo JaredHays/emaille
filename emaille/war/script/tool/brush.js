@@ -6,12 +6,19 @@ function Brush() {
 }
 
 Brush.prototype = {
+	paintRing: function(clicked) {
+		// Using default material, create new
+		if(clicked.mesh.material === materials[clicked.geometryIndex])
+			clicked.mesh.material = materials[clicked.geometryIndex].clone();
+		clicked.mesh.material.color.setStyle(ringColor);
+	},
+	
 	onMouseDown: function() {
 		var clicked = getClickedRing();
 		if(clicked !== null) {
 			// console.log(clicked.nodeID);
 			// scene.remove(clicked);
-			clicked.material.color = new THREE.Color(ringColor);
+			this.paintRing(clicked);
 		}
 	},
 
@@ -23,7 +30,7 @@ Brush.prototype = {
 			var clicked = getClickedRing();
 			if(clicked !== null)
 				// scene.remove(clicked);
-				clicked.material.color = new THREE.Color(ringColor);
+				this.paintRing(clicked);
 		}
 	}
 };

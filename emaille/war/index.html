@@ -46,12 +46,14 @@
 				<div class="ring-div">
 					<input class="ring-enable" type="checkbox" checked />
 					<input class="default-color" type="color" value="#FF00FF" />
+					<br />
+					
 					<select class="wire-gauge-system"></select><select class="wire-gauge"></select>
 					<br />
 					
-					<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="number" value="1" min="0" step="0.001" /></div>
+					<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="range" value="1" min="0.001" max="2" step="0.001" required /><output class="inner-diameter-value"></output></div>
 					
-					<div class="field-div"><label for="aspect-ratio">AR: </label><input class="aspect-ratio" type="number" value="1" min="0" step="0.001" /></div>
+					<div class="field-div"><label for="aspect-ratio">AR: </label><input class="aspect-ratio" type="range" value="1" min="0" step="0.001" required /><output class="aspect-ratio-value"></output></div>
 				</div>
 			</div>
 		</div>
