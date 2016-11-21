@@ -21,7 +21,6 @@ var weave = null;
 
 var geometries = [];
 var materials = [];
-// var baseMaterial = new THREE.MeshStandardMaterial({color: "magenta"});
 var ringEnabledFlags;
 
 var head = null;
@@ -67,6 +66,10 @@ function run() {
 	renderer.render(scene, camera);
 }
 
+/**
+ * Raycast from the cursor to fetch the clicked ring.
+ * Raycast results are cached, so this is surprisingly not slow.
+ */
 function getClickedRing() {
 	var t0 = performance.now();	
 	raycaster.setFromCamera(mouse.pos, camera);
@@ -76,6 +79,9 @@ function getClickedRing() {
 	return result;
 }
 
+/**
+ * Load static data from the server (wire sizes, weaves, etc.)
+ */
 function loadStaticData() {
 	$.ajax({
 		url: "https://e-maille.appspot.com/data/getwires",
@@ -150,6 +156,12 @@ function Ring(ringID, basePos) {
 }
 
 var linkTime = 0;
+/**
+ * Link a base ring with the rest of the rings in a pattern chunk.
+ * Searches for pre-existing rings and connects them before creating
+ * any rings that do not exist yet.
+ * Continues creating pattern chunks until they are out of camera view.
+ */
 function linkRings(currentRing, frustum) {
 	// Stop once current ring is no longer visible on the canvas
 	currentRing.mesh.updateMatrixWorld();
@@ -276,6 +288,9 @@ function linkRings(currentRing, frustum) {
 	}
 }
 
+/**
+ * Create a ring sheet for the selected weave
+ */
 function createRings() {
 	if(!weave || Object.keys(wireGauges).length === 0)
 		return;
@@ -284,9 +299,9 @@ function createRings() {
 	
 	for(var i = 0; i < weave.geometries.length; i++) {
 		var radius = $("div#ring-div-" + i + " .inner-diameter").val() * scale / 2;
-		var tube = getSelectedWireGauge(i)[units] * scale;
+		var tube = getSelectedWireGauge(i) * scale;
 		geometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
-		materials[i] = new THREE.MeshStandardMaterial({color: $("div#ring-div-" + i).find(".default-color").val()});
+		materials[i] = new THREE.MeshPhongMaterial({color: $("div#ring-div-" + i).find(".default-color").val()});
 	}
 	
 	var currentRing = new Ring("base");
@@ -329,6 +344,9 @@ function updateGeometry(currentRing, geometryIndex) {
 	}
 }
 
+/**
+ * Update the geometry for a ring type and then tell three.js to redraw them
+ */
 function updateGeometries(geometryIndex) {
 	if(!weave || Object.keys(wireGauges).length === 0)
 		return;
@@ -346,7 +364,7 @@ function updateGeometries(geometryIndex) {
 	if(geometries[geometryIndex])
 		geometries[geometryIndex].dispose();
 	var radius = $("div#ring-div-" + geometryIndex + " .inner-diameter").val() * scale / 2;
-	var tube = getSelectedWireGauge(geometryIndex)[units] * scale;
+	var tube = getSelectedWireGauge(geometryIndex) * scale;
 	geometries[geometryIndex] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
 	
 	updateGeometry(currentRing, geometryIndex);
@@ -382,6 +400,9 @@ function updatePosition(currentRing, ringID, basePos) {
 	}
 }
 
+/**
+ * Update the positions of all rings, fanning out from the center
+ */
 function updatePositions() {
 	var currentRing = head;
 	
@@ -402,6 +423,9 @@ function updatePositions() {
 	resetRingFlag(currentRing);
 }
 
+/**
+ * Reset the rings' update flags after a recursive function
+ */
 function resetRingFlag(currentRing) {
 	if(!currentRing.updated)
 		return;
@@ -416,6 +440,9 @@ function resetRingFlag(currentRing) {
 	}
 }
 
+/**
+ * Set up the control divs for each type of ring in the weave
+ */
 function setupRingDivs() {
 	$("div.ring-div").each(function() {
 		// Wire gauge system
@@ -439,32 +466,42 @@ function setupRingDivs() {
 		
 		// ID
 		var innerDiameter = $(this).find(".inner-diameter");
-		// innerDiameter.attr("name", "inner-diameter-" + geometryIndex);
 		if(geometry.defaults && geometry.defaults.innerDiameter) {
 			innerDiameter.val(geometry.defaults.innerDiameter);
 		}
-		// $(this).find(".inner-diameter-value").attr("name", "inner-diameter-" + geometryIndex);
 		
 		// AR
 		var aspectRatio = $(this).find(".aspect-ratio");
-		// aspectRatio.attr("name", "aspect-ratio-" + geometryIndex);
-			if(geometry.minAR) {
-				aspectRatio.attr("min", geometry.minAR);
-			}
-			if(geometry.maxAR) {
-				aspectRatio.attr("max", geometry.maxAR);
-			}
-		// $(this).find(".aspect-ratio-value").attr("name", "aspect-ratio-" + geometryIndex);
+		var min = Math.max(geometry.minAR ? geometry.minAR : Number.NEGATIVE_INFINITY, innerDiameter.attr("min") / getSelectedWireGauge(geometryIndex));
+		aspectRatio.attr("min", min.toFixed(2));
+		innerDiameter.attr("min", (min * getSelectedWireGauge(geometryIndex)).toFixed(2));
+
+		var max = Math.min(geometry.maxAR ? geometry.maxAR : Number.POSITIVE_INFINITY, innerDiameter.attr("max") / getSelectedWireGauge(geometryIndex));
+		aspectRatio.attr("max", max.toFixed(2));
+		innerDiameter.attr("max", (max * getSelectedWireGauge(geometryIndex)).toFixed(2));
 		
-		innerDiameter.val((innerDiameter.val() * 1).toFixed(2)).change();
+		var options = {
+			"minClass": "slider-min unit-field", 
+			"maxClass": "slider-max unit-field", 
+			"valueClass": "slider-value unit-field"}
+		innerDiameter.boundedSlider(options);
+		aspectRatio.boundedSlider(options);
+		innerDiameter.val(Number(innerDiameter.val()).toFixed(2)).change();
 		aspectRatio.change();
 	});
 }
 
+/**
+ * Get the selected wire gauge for a given ring type in the currently
+ * selected units
+ */
 function getSelectedWireGauge(geometryIndex) {
-	return wireGauges[$(".wire-gauge-system").val()].sizes[$("div#ring-div-" + geometryIndex + " .wire-gauge").val()];
+	return wireGauges[$(".wire-gauge-system").val()].sizes[$("div#ring-div-" + geometryIndex + " .wire-gauge").val()][units];
 }
 
+/**
+ * Create the lists of wire gauge types and wire gauges for a given ring type
+ */
 function createWireGaugeList(geometryIndex, systemName) {
 	var system = wireGauges[systemName];
 	var gaugeList = $("div#ring-div-" + geometryIndex + " .wire-gauge");
@@ -475,22 +512,43 @@ function createWireGaugeList(geometryIndex, systemName) {
 	}
 }
 
-function getAR(geometryIndex) {
-	return $("div#ring-div-" + geometryIndex).find(".inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units];
+/**
+ * Update the ID of a given ring type and enforce any mins/maxes
+ * in the weave definition.
+ */
+function updateID(geometryIndex) {
+	var ringDiv = $("div#ring-div-" + geometryIndex);
+	var aspectRatio = ringDiv.find(".aspect-ratio");
+	var innerDiameter = aspectRatio.val() * getSelectedWireGauge(geometryIndex);
+	ringDiv.find(".inner-diameter").val(innerDiameter).trigger("update");
+	positionUpdate = true;
 }
 
+/**
+ * Update the AR of a given ring type and enforce any mins/maxes
+ * in the weave definition.
+ */
 function updateAR(geometryIndex) {
 	var ringDiv = $("div#ring-div-" + geometryIndex);
-	// var aspectRatio = ringDiv.find(".inner-diameter").val() / getSelectedWireGauge(geometryIndex)[units];
-	// if(weave.geometries[geometryIndex].min)
-		// aspectRatio = Math.max(aspectRatio, weave.geometries[geometryIndex].min);
-	// if(weave.geometries[geometryIndex].max)
-		// aspectRatio = Math.min(aspectRatio, weave.geometries[geometryIndex].max);
-	ringDiv.find(".aspect-ratio").val(getAR(geometryIndex).toFixed(3));
-	// ringDiv.find(".inner-diameter").change();
+	var innerDiameter = ringDiv.find(".inner-diameter");
+	var aspectRatio = innerDiameter.val() / getSelectedWireGauge(geometryIndex);
+	// AR went below minimum
+	if(weave.geometries[geometryIndex].min && aspectRatio < weave.geometries[geometryIndex].min) {
+		aspectRatio = weave.geometries[geometryIndex].min;
+		innerDiameter.val(aspectRatio * getSelectedWireGauge(geometryIndex)).change();
+	}
+	// AR went above maximum
+	if(weave.geometries[geometryIndex].max && aspectRatio > weave.geometries[geometryIndex].max) {
+		aspectRatio = weave.geometries[geometryIndex].max;
+		innerDiameter.val(aspectRatio * getSelectedWireGauge(geometryIndex)).change();
+	}
+	ringDiv.find(".aspect-ratio").val(aspectRatio).trigger("update");
 	positionUpdate = true;
 }
 	
+/**
+ * Grow the sheet out from the edges to cover the visible area
+ */
 function expandSheet() {
 	// Setup for the in-camera test
 	var frustum = new THREE.Frustum();
@@ -504,6 +562,9 @@ function expandSheet() {
 	}
 }
 
+/**
+ * Perform initial setup after a weave is selected
+ */
 function setupWeave() {
 	camera.position.x = 0;
 	camera.position.y = 0;
@@ -517,10 +578,11 @@ function setupWeave() {
 	edgeRings = new Set();
 	geometryUpdates = new Set();
 	
-	// Keep children 0, 1, and 2: camera and lights
-	// TODO: store those somewhere instead of using indexes
-	for(var i = scene.children.length - 1; i > 2; i--) {
-		scene.remove(scene.children[i]);
+	// Delete all children except camera and lights
+	for(var i = scene.children.length - 1; i >= 0; i--) {
+		if(!(scene.children[i] instanceof THREE.Camera) && !(scene.children[i] instanceof THREE.Light)) {
+			scene.remove(scene.children[i]);
+		}
 	}
 	
 	head = null;
@@ -541,10 +603,8 @@ function setupWeave() {
 	for(var i = 0; i < weave.geometries.length; i++) {
 		outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
 		ringEnabledFlags[i] = true;
-		// geometryUpdates.add(i);
 	}
 	setupRingDivs();
-	// createRings();
 }
 
 $(document).ready(function() {
@@ -570,11 +630,11 @@ $(document).ready(function() {
 	camera.maxZoom = 2;
 	scene.add(camera);
 
-	var light = new THREE.DirectionalLight(0xffffff, 1.5);
+	var light = new THREE.DirectionalLight(0xffffff, 1.0);
 	light.position.set(0, 0, 1);
 
 	scene.add(light);
-	scene.add(new THREE.AmbientLight(0xf0f0f0, 0.25));
+	// scene.add(new THREE.AmbientLight(0xf0f0f0, 0.25));
 
 	canvas.onmousedown = function(e) {
 		e.preventDefault();
@@ -666,24 +726,16 @@ $(document).ready(function() {
 		// });
 	});
 	
-	$(document).on("change", ".inner-diameter", function() {
+	$(document).on("input", ".inner-diameter", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		updateAR(ringDiv.data("geometry"));
 		geometryUpdates.add(ringDiv.data("geometry"));
-		$(this).next(".inner-diameter-value").val(($(this).val() * 1).toFixed(2));
-	});
-	$(document).on("input", ".inner-diameter", function() {
-		$(this).next(".inner-diameter-value").val(($(this).val() * 1).toFixed(2));
 	});
 	
-	$(document).on("change", ".aspect-ratio", function() {
-		var ringDiv = $(this).closest("div.ring-div");
-		ringDiv.find(".inner-diameter").val($(this).val() * getSelectedWireGauge(ringDiv.data("geometry"))[units]).change();
-		geometryUpdates.add(ringDiv.data("geometry"));
-		$(this).next(".aspect-ratio-value").val(($(this).val() * 1).toFixed(2));
-	});
 	$(document).on("input", ".aspect-ratio", function() {
-		$(this).next(".aspect-ratio-value").val(($(this).val() * 1).toFixed(2));
+		var ringDiv = $(this).closest("div.ring-div");
+		updateID(ringDiv.data("geometry"));
+		geometryUpdates.add(ringDiv.data("geometry"));
 	});
 	
 	// Switch unit-based inputs between in. and mm.

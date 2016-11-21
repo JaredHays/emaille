@@ -15,6 +15,7 @@
 <script type="text/javascript" src="data/weave/weaves.js"></script>
 <script type="text/javascript" src="script/tool/brush.js"></script>
 <script type="text/javascript" src="script/tool/move.js"></script>
+<script type="text/javascript" src="script/boundedSlider.js"></script>
 <script type="text/javascript" src="script/maille.js"></script>
 </head>
 
@@ -45,15 +46,15 @@
 			<div id="ring-div-div">
 				<div class="ring-div">
 					<input class="ring-enable" type="checkbox" checked />
-					<input class="default-color" type="color" value="#FF00FF" />
+					<input class="default-color" type="color" value="#DCDCDC" />
 					<br />
 					
 					<select class="wire-gauge-system"></select><select class="wire-gauge"></select>
 					<br />
 					
-					<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="range" value="1" min="0.001" max="2" step="0.001" required /><output class="inner-diameter-value"></output></div>
+					<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="range" value="1" min="0.01" max="2" step="0.01" required /><!-- <output class="inner-diameter-value"></output> --></div>
 					
-					<div class="field-div"><label for="aspect-ratio">AR: </label><input class="aspect-ratio" type="range" value="1" min="0" step="0.001" required /><output class="aspect-ratio-value"></output></div>
+					<div class="field-div"><label for="aspect-ratio">AR: </label><input class="aspect-ratio" type="range" value="1" min="0" step="0.001" required /><!-- <output class="aspect-ratio-value"></output> --></div>
 				</div>
 			</div>
 		</div>
