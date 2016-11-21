@@ -19,8 +19,8 @@ var wireGauges = {};
 
 var weave = null;
 
-var geometries = [];
-var materials = [];
+var baseGeometries = [];
+var baseMaterials = [];
 var ringEnabledFlags;
 
 var head = null;
@@ -71,11 +71,11 @@ function run() {
  * Raycast results are cached, so this is surprisingly not slow.
  */
 function getClickedRing() {
-	var t0 = performance.now();	
+	// var t0 = performance.now();	
 	raycaster.setFromCamera(mouse.pos, camera);
 	var result = raycaster.intersectObjects(scene.children);
 	result = result.length > 0 && ringEnabledFlags[ringGraph.node(result[0].object.nodeID).geometryIndex] ? ringGraph.node(result[0].object.nodeID) : null;
-	console.log("raycast time: " + (performance.now() - t0).toFixed(2));
+	// console.log("raycast time: " + (performance.now() - t0).toFixed(2));
 	return result;
 }
 
@@ -116,7 +116,7 @@ function Ring(ringID, basePos) {
 	this.ringIndex = structureData.ring;
 	var ringData = weave.rings[this.ringIndex];
 	this.geometryIndex = ringData.geometry;
-	this.mesh = new THREE.Mesh(geometries[this.geometryIndex], materials[this.geometryIndex]);
+	this.mesh = new THREE.Mesh(baseGeometries[this.geometryIndex], baseMaterials[this.geometryIndex]);
 	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
 	if(basePos)
 		 this.mesh.position.copy(basePos);
@@ -300,8 +300,8 @@ function createRings() {
 	for(var i = 0; i < weave.geometries.length; i++) {
 		var radius = $("div#ring-div-" + i + " .inner-diameter").val() * scale / 2;
 		var tube = getSelectedWireGauge(i) * scale;
-		geometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
-		materials[i] = new THREE.MeshPhongMaterial({color: $("div#ring-div-" + i).find(".default-color").val(), specular: 0xffffff, shininess: 60});
+		baseGeometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
+		baseMaterials[i] = new THREE.MeshPhongMaterial({color: $("div#ring-div-" + i).find(".default-color").val(), specular: 0xffffff, shininess: 60});
 	}
 	
 	var currentRing = new Ring("base");
@@ -329,7 +329,7 @@ function updateGeometry(currentRing, geometryIndex) {
 		return;
 	
 	if(!geometryIndex || currentRing.geometryIndex === geometryIndex) {	
-		currentRing.mesh.geometry = geometries[currentRing.geometryIndex];
+		currentRing.mesh.geometry = baseGeometries[currentRing.geometryIndex];
 		currentRing.mesh.geometry.dynamic = true;
 		currentRing.mesh.geometry.verticesNeedUpdate = true;
 	}
@@ -361,11 +361,11 @@ function updateGeometries(geometryIndex) {
 	
 	var currentRing = head;
 
-	if(geometries[geometryIndex])
-		geometries[geometryIndex].dispose();
+	if(baseGeometries[geometryIndex])
+		baseGeometries[geometryIndex].dispose();
 	var radius = $("div#ring-div-" + geometryIndex + " .inner-diameter").val() * scale / 2;
 	var tube = getSelectedWireGauge(geometryIndex) * scale;
-	geometries[geometryIndex] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
+	baseGeometries[geometryIndex] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
 	
 	updateGeometry(currentRing, geometryIndex);
 	
@@ -686,6 +686,11 @@ $(document).ready(function() {
 			tool = new Brush();
 	});
 	
+	$("#eraser-button").click(function() {
+		if(!(tool instanceof Eraser)) 
+			tool = new Eraser();
+	});
+	
 	$("#move-button").click(function() {
 		if(!(tool instanceof Move)) 
 			tool = new Move();
@@ -712,7 +717,7 @@ $(document).ready(function() {
 	
 	$(document).on("change", ".default-color", function() {
 		var ringDiv = $(this).closest("div.ring-div");
-		materials[ringDiv.data("geometry")].color.setStyle($(this).val());
+		baseMaterials[ringDiv.data("geometry")].color.setStyle($(this).val());
 	});
 	
 	// Weave change: basically recreate the entire thing

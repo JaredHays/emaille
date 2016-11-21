@@ -7,6 +7,7 @@ canvas {
 
 div#control-panel {
 	float: left;
+	margin-left: 5px;
 }
 
 div#control-panel * {
@@ -45,6 +46,10 @@ button.tool-button.selected {
 
 button#brush-button {
 	background-image: url("../image/paint-brush.svg");
+}
+
+button#eraser-button {
+	background-image: url("../image/eraser.svg");
 }
 
 button#move-button {

@@ -3,14 +3,21 @@
  */
 
 function Brush() {
+	this.materials = {};
 }
 
 Brush.prototype = {
+	// Fetch a shared material or create it if it doesn't exist
+	getMaterial: function(color) {
+		if(!(color in this.materials)) {
+			this.materials[color] = baseMaterials[0].clone();
+			this.materials[color].color.setStyle(color);
+		}
+		return this.materials[color];
+	},
+	
 	paintRing: function(clicked) {
-		// Using default material, create new
-		if(clicked.mesh.material === materials[clicked.geometryIndex])
-			clicked.mesh.material = materials[clicked.geometryIndex].clone();
-		clicked.mesh.material.color.setStyle(ringColor);
+		clicked.mesh.material = this.getMaterial(ringColor);
 	},
 	
 	onMouseDown: function() {

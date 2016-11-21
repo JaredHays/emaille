@@ -47,10 +47,10 @@
 		
 		var valuePos = function() {
 			var pos = self.elem.position();
-			var offset = self.minSpan.width() + self.valueSpan.width() / 2;
+			var offset = -self.valueSpan.width() / 2;
 			var left = (self.elem.val() - self.elem.attr("min")) / (self.elem.attr("max") - self.elem.attr("min"));
 			left = Math.clamp(left, 0, 1) * self.elem.width() + offset;
-			return left;
+			return pos.left + left;
 		};
 		self.valueSpan.css("left", valuePos());
 		self.valueSpan.css("top", self.elem.position().top);
