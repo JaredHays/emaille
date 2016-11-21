@@ -301,7 +301,7 @@ function createRings() {
 		var radius = $("div#ring-div-" + i + " .inner-diameter").val() * scale / 2;
 		var tube = getSelectedWireGauge(i) * scale;
 		geometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
-		materials[i] = new THREE.MeshPhongMaterial({color: $("div#ring-div-" + i).find(".default-color").val()});
+		materials[i] = new THREE.MeshPhongMaterial({color: $("div#ring-div-" + i).find(".default-color").val(), specular: 0xffffff, shininess: 60});
 	}
 	
 	var currentRing = new Ring("base");
@@ -473,12 +473,12 @@ function setupRingDivs() {
 		// AR
 		var aspectRatio = $(this).find(".aspect-ratio");
 		var min = Math.max(geometry.minAR ? geometry.minAR : Number.NEGATIVE_INFINITY, innerDiameter.attr("min") / getSelectedWireGauge(geometryIndex));
-		aspectRatio.attr("min", min.toFixed(2));
-		innerDiameter.attr("min", (min * getSelectedWireGauge(geometryIndex)).toFixed(2));
+		aspectRatio.attr("min", min);
+		innerDiameter.attr("min", min * getSelectedWireGauge(geometryIndex));
 
 		var max = Math.min(geometry.maxAR ? geometry.maxAR : Number.POSITIVE_INFINITY, innerDiameter.attr("max") / getSelectedWireGauge(geometryIndex));
-		aspectRatio.attr("max", max.toFixed(2));
-		innerDiameter.attr("max", (max * getSelectedWireGauge(geometryIndex)).toFixed(2));
+		aspectRatio.attr("max", max);
+		innerDiameter.attr("max", max * getSelectedWireGauge(geometryIndex));
 		
 		var options = {
 			"minClass": "slider-min unit-field", 
@@ -532,17 +532,20 @@ function updateAR(geometryIndex) {
 	var ringDiv = $("div#ring-div-" + geometryIndex);
 	var innerDiameter = ringDiv.find(".inner-diameter");
 	var aspectRatio = innerDiameter.val() / getSelectedWireGauge(geometryIndex);
+	var geometry = weave.geometries[geometryIndex];
+	var min = Math.max(geometry.minAR ? geometry.minAR : Number.NEGATIVE_INFINITY, innerDiameter.attr("min") / getSelectedWireGauge(geometryIndex));
+	var max = Math.min(geometry.maxAR ? geometry.maxAR : Number.POSITIVE_INFINITY, innerDiameter.attr("max") / getSelectedWireGauge(geometryIndex));
 	// AR went below minimum
-	if(weave.geometries[geometryIndex].min && aspectRatio < weave.geometries[geometryIndex].min) {
-		aspectRatio = weave.geometries[geometryIndex].min;
+	if(aspectRatio < min) {
+		aspectRatio = min;
 		innerDiameter.val(aspectRatio * getSelectedWireGauge(geometryIndex)).change();
 	}
 	// AR went above maximum
-	if(weave.geometries[geometryIndex].max && aspectRatio > weave.geometries[geometryIndex].max) {
-		aspectRatio = weave.geometries[geometryIndex].max;
+	if(aspectRatio > max) {
+		aspectRatio = max;
 		innerDiameter.val(aspectRatio * getSelectedWireGauge(geometryIndex)).change();
 	}
-	ringDiv.find(".aspect-ratio").val(aspectRatio).trigger("update");
+	ringDiv.find(".aspect-ratio").attr("min", min).attr("max", max).val(aspectRatio).trigger("update");
 	positionUpdate = true;
 }
 	
@@ -634,7 +637,6 @@ $(document).ready(function() {
 	light.position.set(0, 0, 1);
 
 	scene.add(light);
-	// scene.add(new THREE.AmbientLight(0xf0f0f0, 0.25));
 
 	canvas.onmousedown = function(e) {
 		e.preventDefault();

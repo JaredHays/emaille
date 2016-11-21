@@ -27,10 +27,6 @@ div#control-panel .field-div label {
 	padding-right: 5px;
 }
 
-.field-div output {
-	text-align: right;
-}
-
 div#top-control-div label{
 	margin-left: 0px;
 	margin-right: 10px;
@@ -67,12 +63,12 @@ div#control-panel .slider-min, div#control-panel .slider-max {
 
 div#control-panel .slider-min {
 	text-align: right;
-	width: 5%;
+	width: 8%;
 	margin-right: 6px;
 }
 
 div#control-panel .slider-max {
-	width: 5%;
+	width: 8%;
 	margin-left: 6px;
 }
 
