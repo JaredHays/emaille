@@ -33,7 +33,7 @@ div#top-control-div label{
 	margin-right: 10px;
 }
 
-button.tool-button {
+button.tool-button, button.command-button {
 	width: 32px;
 	height: 32px;
 	padding: 0px;
@@ -42,6 +42,18 @@ button.tool-button {
 button.tool-button.selected {
 	background-color: #f8f8f8;
 	border-color: darkgray;
+}
+
+button.tool-button.disabled, button.command-button.disabled {
+	opacity: 0.5;
+}
+
+button#undo-button {
+	background-image: url("../image/undo.svg");
+}
+
+button#redo-button {
+	background-image: url("../image/redo.svg");
 }
 
 button#brush-button {

@@ -6,7 +6,11 @@
  * 2. Auto quality?
  * 3. Print
  * 4. Sizes and ring counts
- * 5. Undo
+ * 5. Zoom slider
+ * 6. Fixed sheet size option
+ * 7. Cut/add (click existing ring to re-link from nearest base?)
+ * 8. Map pan to right mouse
+ * 9. Keyboard shortcuts
  */
 
 var renderer = null;
@@ -52,8 +56,8 @@ var mouse = {
 };
 var tool;
 
-var commandQueue;
-var commandIndex;
+var commandQueue = [];
+var commandIndex = 0;
 
 var logPerformance = true;
 
@@ -662,6 +666,22 @@ function setupWeave() {
 	setupRingDivs();
 }
 
+function updateUndoRedoButtons() {
+	if(commandQueue.length > 0 && commandIndex > 0) {
+		$("#undo-button").removeClass("disabled").attr("disabled", false);
+	}
+	else {
+		$("#undo-button").addClass("disabled").attr("disabled", true);
+	}
+	
+	if(commandQueue.length > 0 && commandIndex < commandQueue.length) {
+		$("#redo-button").removeClass("disabled").attr("disabled", false);
+	}
+	else {
+		$("#redo-button").addClass("disabled").attr("disabled", true);
+	}
+}
+
 function executeCommand(command) {
 	command.execute();
 	commandQueue[commandIndex] = command;
@@ -669,6 +689,7 @@ function executeCommand(command) {
 	// Delete any commands that were ahead of this one in the queue
 	if(commandQueue.length > commandIndex)
 		commandQueue.splice(commandIndex, commandQueue.length - commandIndex);
+	updateUndoRedoButtons();
 }
 
 function undo() {
@@ -677,6 +698,7 @@ function undo() {
 	
 	commandIndex--;
 	commandQueue[commandIndex].undo();
+	updateUndoRedoButtons();
 }
 
 function redo() {
@@ -685,6 +707,7 @@ function redo() {
 	
 	commandQueue[commandIndex].execute();
 	commandIndex++;
+	updateUndoRedoButtons();
 }
 
 $(document).ready(function() {
@@ -776,6 +799,14 @@ $(document).ready(function() {
 	});
 	$("#ring-color").change();
 	
+	$("#undo-button").click(function() {
+		undo();
+	});
+	
+	$("#redo-button").click(function() {
+		redo();
+	});
+	
 	$("#brush-button").click(function() {
 		if(!(tool instanceof Brush))
 			tool = new Brush();
@@ -796,6 +827,7 @@ $(document).ready(function() {
 		$(this).addClass("selected");
 	});
 	$("#brush-button").click();
+	updateUndoRedoButtons();
 	
 	$(document).on("change", ".wire-gauge-system", function() {
 		var ringDiv = $(this).closest("div.ring-div");

@@ -27,7 +27,6 @@ Eraser.prototype = {
 				clicked.mesh.material = baseMaterials[clicked.geometryIndex];
 			},
 			undo: function() {
-				console.log("undo");
 				clicked.mesh.material = eraser.getMaterial(oldColor);
 			}
 		}
