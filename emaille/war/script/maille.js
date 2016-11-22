@@ -11,6 +11,7 @@
  * 7. Cut/add (click existing ring to re-link from nearest base?)
  * 8. Map pan to right mouse
  * 9. Keyboard shortcuts
+ * 10. Undo/redo for ring settings
  */
 
 var renderer = null;
@@ -629,9 +630,6 @@ function setupWeave() {
 	camera.updateMatrixWorld(); 
 	camera.updateProjectionMatrix();
 	
-	commandQueue = [];
-	commandIndex = 0;
-	
 	ringGraph = new graphlib.Graph({"directed": true, "multigraph": true});
 	nodeIndex = 0;
 	edgeRings = new Set();
@@ -664,6 +662,10 @@ function setupWeave() {
 		ringEnabledFlags[i] = true;
 	}
 	setupRingDivs();
+	
+	commandQueue = [];
+	commandIndex = 0;
+	updateUndoRedoButtons();
 }
 
 function updateUndoRedoButtons() {
@@ -860,11 +862,30 @@ $(document).ready(function() {
 		// });
 	});
 	
+	$(document).on("change", ".inner-diameter, .aspect-ratio", function() {
+		if($(this).data("value")) {
+			var elem = $(this);
+			var oldValue = $(this).data("value");
+			var newValue = $(this).val();
+			executeCommand({
+				execute: function() {
+					if(elem.val() !== newValue)
+						elem.val(newValue).trigger("input");
+				},
+				undo: function() {
+					if(elem.val() !== oldValue)
+						elem.val(oldValue).trigger("input");
+				}
+			});
+		}
+		$(this).data("value", $(this).val());
+	});
+	
 	$(document).on("input", ".inner-diameter", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		updateAR(ringDiv.data("geometry"));
 		geometryUpdates.add(ringDiv.data("geometry"));
-	});
+	});	
 	
 	$(document).on("input", ".aspect-ratio", function() {
 		var ringDiv = $(this).closest("div.ring-div");
@@ -910,7 +931,7 @@ $(document).ready(function() {
 		}
 	});
 	
-	loadStaticData();	
+	loadStaticData();
 
 	run();
 });
