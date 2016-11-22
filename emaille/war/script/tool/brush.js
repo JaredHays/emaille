@@ -3,29 +3,38 @@
  */
 
 function Brush() {
-	this.materials = {};
 }
 
 Brush.prototype = {
 	// Fetch a shared material or create it if it doesn't exist
 	getMaterial: function(color) {
-		if(!(color in this.materials)) {
-			this.materials[color] = baseMaterials[0].clone();
-			this.materials[color].color.setStyle(color);
+		if(!(color in materials)) {
+			materials[color] = baseMaterials[0].clone();
+			materials[color].color.setStyle(color);
 		}
-		return this.materials[color];
+		return materials[color];
 	},
 	
 	paintRing: function(clicked) {
-		clicked.mesh.material = this.getMaterial(ringColor);
+		var brush = this;
+		var newColor = ringColor;
+		var oldColor = "#" + clicked.mesh.material.color.getHexString();
+		if(oldColor === newColor)
+			return null;
+		return {
+			execute: function() {
+				clicked.mesh.material = brush.getMaterial(newColor);
+			},
+			undo: function() {
+				clicked.mesh.material = brush.getMaterial(oldColor);
+			}
+		}
 	},
 	
 	onMouseDown: function() {
 		var clicked = getClickedRing();
 		if(clicked !== null) {
-			// console.log(clicked.nodeID);
-			// scene.remove(clicked);
-			this.paintRing(clicked);
+			return this.paintRing(clicked);
 		}
 	},
 
@@ -36,8 +45,7 @@ Brush.prototype = {
 		if(mouse.down) {
 			var clicked = getClickedRing();
 			if(clicked !== null)
-				// scene.remove(clicked);
-				this.paintRing(clicked);
+				return this.paintRing(clicked);
 		}
 	}
 };

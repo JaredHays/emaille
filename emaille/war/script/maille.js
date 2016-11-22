@@ -23,6 +23,7 @@ var weave = null;
 
 var baseGeometries = [];
 var baseMaterials = [];
+var materials = {};
 var ringEnabledFlags;
 
 var ringRotations;
@@ -126,14 +127,11 @@ function loadStaticData() {
 }
 
 function Ring(ringID, basePos) {
-	var t0 = performance.now();
 	var structureData = weave.structure[ringID];
 	this.ringIndex = structureData.ring;
 	var ringData = weave.rings[this.ringIndex];
 	this.geometryIndex = ringData.geometry;
-	var t1 = performance.now();
 	this.mesh = new THREE.Mesh(baseGeometries[this.geometryIndex], baseMaterials[this.geometryIndex]);
-	var t2 = performance.now();
 	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
 	if(basePos)
 		 this.mesh.position.copy(basePos);
@@ -141,32 +139,22 @@ function Ring(ringID, basePos) {
 	this.mesh.position.y += full_radius * structureData.pos.y;
 	this.mesh.position.z = -50;
 	this.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
-	var t3 = performance.now();
-	// if(structureData.rot) {
-		// if(structureData.rot.x)
-			// this.mesh.rotateX(THREE.Math.degToRad(structureData.rot.x));
-		// if(structureData.rot.y)
-			// this.mesh.rotateY(THREE.Math.degToRad(structureData.rot.y));
-		// if(structureData.rot.z) 
-			// this.mesh.rotateZ(THREE.Math.degToRad(structureData.rot.z));
-	// }
+	
 	var setQuaternion = false;
 	if(ringID in structureRotations) {
 		this.mesh.quaternion.copy(structureRotations[ringID]);
 		setQuaternion = true;
 	}
-	var t10 = performance.now();
 	if(ringRotations[this.ringIndex])
 		if(setQuaternion)
 			this.mesh.quaternion.multiply(ringRotations[this.ringIndex]);
 		else
 			this.mesh.quaternion.copy(ringRotations[this.ringIndex]);
-	// this.mesh.rotateY(THREE.Math.degToRad(ringData.rotation));
-	var t4 = performance.now();
+		
 	this.mesh.material.transparent = !ringEnabledFlags[this.geometryIndex];
 	this.mesh.material.opacity = ringEnabledFlags[this.geometryIndex] ? 1 : 0.5;
 	this.updated = false;
-	var t5 = performance.now();
+	
 	this.isInCamera = function(frustum) {
 		if(!frustum) {
 			frustum = new THREE.Frustum();
@@ -175,20 +163,14 @@ function Ring(ringID, basePos) {
 		}
 		return frustum.intersectsObject(this.mesh);
 	};
-	var t6 = performance.now();
+	
 	scene.add(this.mesh);
-	var t7 = performance.now();
+	
 	this.nodeIndex = nodeIndex;
 	this.nodeID = "ring-" + nodeIndex;
 	this.mesh.nodeID = this.nodeID;
-	var t8 = performance.now();
 	ringGraph.setNode(this.nodeID, this);
-	var t9 = performance.now();
 	nodeIndex++;
-	if(nodeIndex === 1) {
-		console.log(t10-t3);
-		console.log(t4-t10);
-	}
 }
 
 var linkTime;
@@ -680,6 +662,31 @@ function setupWeave() {
 	setupRingDivs();
 }
 
+function executeCommand(command) {
+	command.execute();
+	commandQueue[commandIndex] = command;
+	commandIndex++;
+	// Delete any commands that were ahead of this one in the queue
+	if(commandQueue.length > commandIndex)
+		commandQueue.splice(commandIndex, commandQueue.length - commandIndex);
+}
+
+function undo() {
+	if(commandIndex <= 0)
+		return;
+	
+	commandIndex--;
+	commandQueue[commandIndex].undo();
+}
+
+function redo() {
+	if(commandIndex >= commandQueue.length)
+		return;
+	
+	commandQueue[commandIndex].execute();
+	commandIndex++;
+}
+
 $(document).ready(function() {
 	ringDiv = $("div.ring-div");
 	ringDiv.remove();
@@ -711,12 +718,18 @@ $(document).ready(function() {
 	canvas.onmousedown = function(e) {
 		e.preventDefault();
 		mouse.down = true;
-		tool.onMouseDown();
+		var command = tool.onMouseDown();
+		if(command) {
+			executeCommand(command);
+		}
 	};
 	canvas.onmouseup = function(e) {
 		e.preventDefault();
 		mouse.down = false;
-		tool.onMouseUp();
+		var command = tool.onMouseUp();
+		if(command) {
+			executeCommand(command);
+		}
 	
 		// console.log(JSON.stringify(ringGraph.nodes().reduce(function(o, v, i) {
 			// o[i] = ringGraph.node(v);
@@ -727,7 +740,10 @@ $(document).ready(function() {
 		e.preventDefault();
 		mouse.pos.x = ((e.pageX - canvasPos.left) / canvas.width) * 2 - 1;
 		mouse.pos.y = -((e.pageY - canvasPos.top) / canvas.height) * 2 + 1;
-		tool.onMouseMove();
+		var command = tool.onMouseMove();
+		if(command) {
+			executeCommand(command);
+		}
 	};
 	canvas.oncontextmenu = function(e) {
 		e.preventDefault();
@@ -742,8 +758,12 @@ $(document).ready(function() {
 	};
 	
 	document.onkeyup = function(e) {
-		console.log(e.ctrlKey);
-		console.log(e.key);
+		if(e.ctrlKey) {
+			if(e.key === "z")
+				undo();
+			else if(e.key === "y")
+				redo();
+		}
 	};
 	
 	// $(canvas).focusout(function() {
