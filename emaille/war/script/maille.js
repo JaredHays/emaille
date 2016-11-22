@@ -1,3 +1,5 @@
+/*jshint esversion: 6 */
+
 /*
  * TODO:
  * 1. Quality slider
@@ -23,6 +25,9 @@ var baseGeometries = [];
 var baseMaterials = [];
 var ringEnabledFlags;
 
+var ringRotations;
+var structureRotations;
+
 var head = null;
 
 var scale = 100;
@@ -46,9 +51,18 @@ var mouse = {
 };
 var tool;
 
+var commandQueue;
+var commandIndex;
+
+var logPerformance = true;
+
 Math.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
 };
+
+THREE.Vector3.x_axis = new THREE.Vector3(1, 0, 0);
+THREE.Vector3.y_axis = new THREE.Vector3(0, 1, 0);
+THREE.Vector3.z_axis = new THREE.Vector3(0, 0, 1);
 
 function run() {
 	for(var geometryIndex of geometryUpdates) {
@@ -112,11 +126,14 @@ function loadStaticData() {
 }
 
 function Ring(ringID, basePos) {
+	var t0 = performance.now();
 	var structureData = weave.structure[ringID];
 	this.ringIndex = structureData.ring;
 	var ringData = weave.rings[this.ringIndex];
 	this.geometryIndex = ringData.geometry;
+	var t1 = performance.now();
 	this.mesh = new THREE.Mesh(baseGeometries[this.geometryIndex], baseMaterials[this.geometryIndex]);
+	var t2 = performance.now();
 	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
 	if(basePos)
 		 this.mesh.position.copy(basePos);
@@ -124,19 +141,32 @@ function Ring(ringID, basePos) {
 	this.mesh.position.y += full_radius * structureData.pos.y;
 	this.mesh.position.z = -50;
 	this.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
-	if(structureData.rot) {
-		if(structureData.rot.x)
-			this.mesh.rotateX(THREE.Math.degToRad(structureData.rot.x));
-		if(structureData.rot.y)
-			this.mesh.rotateY(THREE.Math.degToRad(structureData.rot.y));
-		if(structureData.rot.z) 
-			this.mesh.rotateZ(THREE.Math.degToRad(structureData.rot.z));
+	var t3 = performance.now();
+	// if(structureData.rot) {
+		// if(structureData.rot.x)
+			// this.mesh.rotateX(THREE.Math.degToRad(structureData.rot.x));
+		// if(structureData.rot.y)
+			// this.mesh.rotateY(THREE.Math.degToRad(structureData.rot.y));
+		// if(structureData.rot.z) 
+			// this.mesh.rotateZ(THREE.Math.degToRad(structureData.rot.z));
+	// }
+	var setQuaternion = false;
+	if(ringID in structureRotations) {
+		this.mesh.quaternion.copy(structureRotations[ringID]);
+		setQuaternion = true;
 	}
-	this.mesh.rotateY(THREE.Math.degToRad(ringData.rotation));
+	var t10 = performance.now();
+	if(ringRotations[this.ringIndex])
+		if(setQuaternion)
+			this.mesh.quaternion.multiply(ringRotations[this.ringIndex]);
+		else
+			this.mesh.quaternion.copy(ringRotations[this.ringIndex]);
+	// this.mesh.rotateY(THREE.Math.degToRad(ringData.rotation));
+	var t4 = performance.now();
 	this.mesh.material.transparent = !ringEnabledFlags[this.geometryIndex];
 	this.mesh.material.opacity = ringEnabledFlags[this.geometryIndex] ? 1 : 0.5;
 	this.updated = false;
-	
+	var t5 = performance.now();
 	this.isInCamera = function(frustum) {
 		if(!frustum) {
 			frustum = new THREE.Frustum();
@@ -145,17 +175,23 @@ function Ring(ringID, basePos) {
 		}
 		return frustum.intersectsObject(this.mesh);
 	};
-	
+	var t6 = performance.now();
 	scene.add(this.mesh);
-	
+	var t7 = performance.now();
 	this.nodeIndex = nodeIndex;
 	this.nodeID = "ring-" + nodeIndex;
 	this.mesh.nodeID = this.nodeID;
+	var t8 = performance.now();
 	ringGraph.setNode(this.nodeID, this);
+	var t9 = performance.now();
 	nodeIndex++;
+	if(nodeIndex === 1) {
+		console.log(t10-t3);
+		console.log(t4-t10);
+	}
 }
 
-var linkTime = 0;
+var linkTime;
 /**
  * Link a base ring with the rest of the rings in a pattern chunk.
  * Searches for pre-existing rings and connects them before creating
@@ -189,6 +225,7 @@ function linkRings(currentRing, frustum) {
 	
 	// Populate ring map with existing rings
 	var rings = {"base": currentRing};
+	var filter = function(edge) {return edge.name === as;};
 	for(ringID in rings) {
 		if(!("links" in structure[ringID]))
 			continue;
@@ -205,7 +242,7 @@ function linkRings(currentRing, frustum) {
 
 			// Add ring to map
 			if(!(as in rings)) {
-				var edges = ringGraph.outEdges(rings[ringID].nodeID).filter(function(edge) {return edge.name === as;});
+				var edges = ringGraph.outEdges(rings[ringID].nodeID).filter(filter);
 				if(edges.length > 0) {
 					var linkedRing = ringGraph.node(edges[0].w);
 					rings[as] = linkedRing;
@@ -213,9 +250,9 @@ function linkRings(currentRing, frustum) {
 			}
 		}
 	}
-		
+	
 	// Find distant rings that are actually linked
-	var t0 = performance.now();
+	filter = function(edge) {return edge.name === path[i];};
 	for(var linkID in linkPaths) {
 		// Skip existing links
 		if(linkID in rings) 
@@ -223,13 +260,13 @@ function linkRings(currentRing, frustum) {
 		
 		// Try each path to potential links
 		for(var path of linkPaths[linkID]) {
-			if(path.length == 0)
+			if(path.length === 0)
 				continue;
 			var validPath = true;
 			var lastRing = currentRing;
 			// Check each step in the path
 			for(var i = 0; validPath && i < path.length; i++) {
-				var edges = ringGraph.outEdges(lastRing.nodeID).filter(function(edge) {return edge.name === path[i];});
+				var edges = ringGraph.outEdges(lastRing.nodeID).filter(filter);
 				validPath = validPath && edges.length > 0;
 				if(validPath) {
 					lastRing = ringGraph.node(edges[0].w);
@@ -242,7 +279,6 @@ function linkRings(currentRing, frustum) {
 			}
 		}
 	}
-	linkTime += (performance.now() - t0);
 	
 	// Search for rings that need to be created
 	var addedNewRing = false;
@@ -254,6 +290,7 @@ function linkRings(currentRing, frustum) {
 			addedNewRing = true;
 		}
 	}
+
 	// Establish any missing links
 	for(ringID in rings) {
 		if(!("links" in structure[ringID]))
@@ -286,6 +323,7 @@ function linkRings(currentRing, frustum) {
 			linkRings(rings[ringID], frustum);
 		}
 	}
+	
 }
 
 /**
@@ -303,6 +341,34 @@ function createRings() {
 		baseGeometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
 		baseMaterials[i] = new THREE.MeshPhongMaterial({color: $("div#ring-div-" + i).find(".default-color").val(), specular: 0xffffff, shininess: 60});
 	}
+	// Ring-defined rotations (all around y axis)
+	ringRotations = [];
+	for(var i = 0; i < weave.rings.length; i++) {
+		if(weave.rings[i].rotation) {
+			ringRotations[i] = new THREE.Quaternion()
+				.setFromAxisAngle(THREE.Vector3.y_axis, THREE.Math.degToRad(weave.rings[i].rotation));
+		}
+		else {
+			ringRotations[i] = null;
+		}
+	}
+	// Structure-defined rotations (any/all 3 axes)
+	structureRotations = {};
+	for(var ringID in weave.structure) {
+		var structureData = weave.structure[ringID];
+		if(structureData.rot) {
+			var q = new THREE.Quaternion();
+			
+			if(structureData.rot.x)
+				q.multiply(new THREE.Quaternion().setFromAxisAngle(THREE.Vector3.x_axis, THREE.Math.degToRad(structureData.rot.x)));
+			if(structureData.rot.y)
+				q.multiply(new THREE.Quaternion().setFromAxisAngle(THREE.Vector3.y_axis, THREE.Math.degToRad(structureData.rot.y)));
+			if(structureData.rot.z) 
+				q.multiply(new THREE.Quaternion().setFromAxisAngle(THREE.Vector3.z_axis, THREE.Math.degToRad(structureData.rot.z)));
+			
+			structureRotations[ringID] = q; 
+		}
+	}
 	
 	var currentRing = new Ring("base");
 	
@@ -315,13 +381,12 @@ function createRings() {
 	camera.updateMatrixWorld(); 
 	frustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 	
-	linkTime = 0;
 	linkRings(currentRing, frustum);
 	
-	var t1 = performance.now();
-	console.log("children: " + scene.children.length);
-	console.log("link time: " + linkTime.toFixed(2));
-	console.log("creation time: " + (t1 - t0).toFixed(2));
+	if(logPerformance) {
+		console.log("children: " + scene.children.length);
+		console.log("creation time: " + (performance.now() - t0).toFixed(2));
+	}
 }
 
 function updateGeometry(currentRing, geometryIndex) {
@@ -371,10 +436,12 @@ function updateGeometries(geometryIndex) {
 	
 	resetRingFlag(currentRing);
 	
-	console.log("children: " + scene.children.length);
 	
 	var t1 = performance.now();
-	console.log("update geometry time: " + (t1 - t0).toFixed(2));
+	if(logPerformance) {
+		console.log("children: " + scene.children.length);
+		console.log("update geometry time: " + (t1 - t0).toFixed(2));
+	}
 }
 
 function updatePosition(currentRing, ringID, basePos) {	
@@ -409,7 +476,7 @@ function updatePositions() {
 	// Get ID of base ring in pattern
 	var structure = weave.structure;
 	var baseID;
-	for(ringID in structure) {
+	for(var ringID in structure) {
 		if(structure[ringID].base) {
 			baseID = ringID;
 			break;
@@ -483,7 +550,7 @@ function setupRingDivs() {
 		var options = {
 			"minClass": "slider-min unit-field", 
 			"maxClass": "slider-max unit-field", 
-			"valueClass": "slider-value unit-field"}
+			"valueClass": "slider-value unit-field"};
 		innerDiameter.boundedSlider(options);
 		aspectRatio.boundedSlider(options);
 		innerDiameter.val(Number(innerDiameter.val()).toFixed(2)).change();
@@ -575,6 +642,9 @@ function setupWeave() {
 	camera.zoom = 1;
 	camera.updateMatrixWorld(); 
 	camera.updateProjectionMatrix();
+	
+	commandQueue = [];
+	commandIndex = 0;
 	
 	ringGraph = new graphlib.Graph({"directed": true, "multigraph": true});
 	nodeIndex = 0;
@@ -669,6 +739,11 @@ $(document).ready(function() {
 		camera.zoom = Math.clamp(camera.zoom + (e.wheelDelta / 720), camera.minZoom, camera.maxZoom);
 		camera.updateProjectionMatrix();
 		expandSheet();
+	};
+	
+	document.onkeyup = function(e) {
+		console.log(e.ctrlKey);
+		console.log(e.key);
 	};
 	
 	// $(canvas).focusout(function() {

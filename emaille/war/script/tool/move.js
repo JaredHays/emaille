@@ -3,18 +3,18 @@
  */
 
 function Move() {
+	this.startPos = null;
+	this.currentPos = null;
+	this.updateTime = null;
+	this.updateInterval = 100;
 }
 
 Move.prototype = {
-	startPos: null,
-	currentPos: null,
-	updateTime: null,
-	updateInterval: 100,
 	
 	onMouseDown: function() {
-		startPos = mouse.pos.clone();
-		currentPos = mouse.pos.clone();
-		updateTime = performance.now();
+		this.startPos = mouse.pos.clone();
+		this.currentPos = mouse.pos.clone();
+		this.updateTime = performance.now();
 	},
 
 	onMouseUp: function() {
@@ -23,9 +23,9 @@ Move.prototype = {
 
 	onMouseMove: function () {
 		if(mouse.down) {
-			camera.position.x -= (mouse.pos.x - currentPos.x) * canvas.width / 2;
-			camera.position.y -= (mouse.pos.y - currentPos.y) * canvas.height / 2;
-			currentPos.copy(mouse.pos);
+			camera.position.x -= (mouse.pos.x - this.currentPos.x) * canvas.width / 2;
+			camera.position.y -= (mouse.pos.y - this.currentPos.y) * canvas.height / 2;
+			this.currentPos.copy(mouse.pos);
 			
 			// Add new rings
 			if(performance.now() - this.updateTime > this.updateInterval) {

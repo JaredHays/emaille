@@ -1,22 +1,21 @@
 ﻿(function($) {
 	$("<style>")
 		.prop("type", "text/css")
-		.html("\
-		.bounded-slider-input {\
-			border-style: none; \
-		} \
-		.bounded-slider-value { \
-			position: absolute; \
-			width: 4%; \
-			text-align: center; \
-			border-radius: 10px; \
-			display: inline-block; \
-			background-color: white; \
-			border-color: black; \
-			border-width: 1px; \
-			border-style: solid; \
-		} \
-		")
+		.html(
+		".bounded-slider-input {" +
+		"	border-style: none;" +
+		"}" +
+		".bounded-slider-value {" +
+		"	position: absolute;" +
+		"	width: 4%;" +
+		"	text-align: center;" +
+		"	border-radius: 10px;" +
+		"	display: inline-block;" +
+		"	background-color: white;" +
+		"	border-color: black;" +
+		"	border-width: 1px;" +
+		"	border-style: solid;" +
+		"}")
 		.appendTo("head");
 	
 	var BoundedSlider = function(elem, options) {
@@ -77,7 +76,7 @@
 				console.log("Range input must have max and min to use boundedSlider: " + $(this).attr("id"));
 				return;
 			}
-			new BoundedSlider($(this), options);
+			$(this).data("boundedSlider", new BoundedSlider($(this), options));
 		}); 
     };
  
