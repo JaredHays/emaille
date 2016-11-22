@@ -511,11 +511,13 @@ function setupRingDivs() {
 			var system = wireGauges[systemName];
 			wireGaugeSystem.append("<option value='" + system.name + "'" + (system.name === selected ? "selected" : "") + ">" + system.name + "</option>");
 		}
-		wireGaugeSystem.change();
+		wireGaugeSystem.data("value", wireGaugeSystem.val()).change();
 		
 		// Wire gauge
+		var wireGauge = $(this).find(".wire-gauge");
+		wireGauge.data("value", wireGauge.val());
 		if(geometry.defaults && geometry.defaults.wireGauge) {
-			$(this).find(".wire-gauge").val(geometry.defaults.wireGauge).change();
+			wireGauge.val(geometry.defaults.wireGauge).change();
 		}
 		
 		// ID
@@ -550,7 +552,7 @@ function setupRingDivs() {
  * selected units
  */
 function getSelectedWireGauge(geometryIndex) {
-	return wireGauges[$(".wire-gauge-system").val()].sizes[$("div#ring-div-" + geometryIndex + " .wire-gauge").val()][units];
+	return wireGauges[$("div#ring-div-" + geometryIndex + " .wire-gauge-system").val()].sizes[$("div#ring-div-" + geometryIndex + " .wire-gauge").val()][units];
 }
 
 /**
@@ -829,16 +831,17 @@ $(document).ready(function() {
 		$(this).addClass("selected");
 	});
 	$("#brush-button").click();
-	updateUndoRedoButtons();
 	
 	$(document).on("change", ".wire-gauge-system", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		createWireGaugeList(ringDiv.data("geometry"), $(this).val());
 		ringDiv.find(".wire-gauge").change();
+		// $(this).data("value", $(this).val());
 	});
 	
 	$(document).on("change", ".wire-gauge", function() {
 		var ringDiv = $(this).closest("div.ring-div");
+		$(this).val($(this).val());
 		updateAR(ringDiv.data("geometry"));
 		geometryUpdates.add(ringDiv.data("geometry"));
 		ringDiv.find(".aspect-ratio").change();
@@ -865,16 +868,35 @@ $(document).ready(function() {
 	$(document).on("change", ".inner-diameter, .aspect-ratio", function() {
 		if($(this).data("value")) {
 			var elem = $(this);
+			var ringDiv = $(this).closest("div.ring-div");
 			var oldValue = $(this).data("value");
 			var newValue = $(this).val();
+			var wireGaugeSystem = ringDiv.find(".wire-gauge-system");
+			var oldWireGaugeSystemValue = wireGaugeSystem.data("value");
+			var newWireGaugeSystemValue = wireGaugeSystem.val();
+			var wireGauge = ringDiv.find(".wire-gauge");
+			var oldWireGaugeValue = wireGauge.data("value");
+			var newWireGaugeValue = wireGauge.val();
 			executeCommand({
 				execute: function() {
-					if(elem.val() !== newValue)
-						elem.val(newValue).trigger("input");
+					if(elem.val() !== newValue) {
+						if(wireGaugeSystem.val() !== newWireGaugeSystemValue)
+							wireGaugeSystem.val(newWireGaugeSystemValue).change();
+						if(wireGauge.val() !== newWireGaugeValue)
+							wireGauge.val(newWireGaugeValue);
+						elem.val(newValue);
+						updateAR(ringDiv.data("geometry"));
+					}
 				},
 				undo: function() {
-					if(elem.val() !== oldValue)
-						elem.val(oldValue).trigger("input");
+					if(elem.val() !== oldValue) {
+						if(wireGaugeSystem.val() !== oldWireGaugeSystemValue)
+							wireGaugeSystem.val(oldWireGaugeSystemValue).change();
+						if(wireGauge.val() !== oldWireGaugeValue)
+							wireGauge.val(oldWireGaugeValue);
+						elem.val(oldValue);
+						updateAR(ringDiv.data("geometry"));
+					}
 				}
 			});
 		}
