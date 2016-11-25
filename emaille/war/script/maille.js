@@ -9,9 +9,10 @@
  * 5. Zoom slider
  * 6. Fixed sheet size option
  * 7. Cut/add (click existing ring to re-link from nearest base?)
- * 8. Map pan to right mouse
- * 9. Keyboard shortcuts
- * 10. Undo/redo for ring settings
+ * 8. Map pan to right mouse?
+ * 9. Undo/redo for ring settings
+ * 10. Touch controls
+ * 11. Weave selection page
  */
 
 var renderer = null;
@@ -326,7 +327,7 @@ function createRings() {
 		var radius = $("div#ring-div-" + i + " .inner-diameter").val() * scale / 2;
 		var tube = getSelectedWireGauge(i) * scale;
 		baseGeometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
-		baseMaterials[i] = new THREE.MeshPhongMaterial({color: $("div#ring-div-" + i).find(".default-color").val(), specular: 0xffffff, shininess: 60});
+		baseMaterials[i] = new THREE.MeshPhongMaterial({color: $("div#ring-div-" + i).find(".default-color").val(), specular: $("div#ring-div-" + i).find(".default-color").val(), shininess: 60, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1});
 	}
 	// Ring-defined rotations (all around y axis)
 	ringRotations = [];
@@ -714,6 +715,98 @@ function redo() {
 	updateUndoRedoButtons();
 }
 
+/**
+ * Render the scene to an image for printing
+ */
+function print() {
+	var zoom = camera.zoom;
+	var lambertMaterials = {};
+	
+	// Switch rings over to a Lambert material for flat coloring
+	for(var nodeID of ringGraph.nodes()) {
+		var ring = ringGraph.node(nodeID);
+		var color = "#" + ring.mesh.material.color.getHexString();
+		console.log(color);
+		
+		if(!(color in lambertMaterials)) {
+			lambertMaterials[color] = new THREE.MeshLambertMaterial({color: color});
+		}
+		
+		ring.mesh.material = lambertMaterials[color];
+	}
+	
+	// Create set of all rings not currently in camera
+	var outOfCamera = new Set(edgeRings);
+	for(var i = 0; i < 2; i++) {
+		for(var ring of outOfCamera) {
+			for(var edge of ringGraph.outEdges(ring.nodeID)) {
+				outOfCamera.add(ringGraph.node(edge.w));
+			}
+		}
+	}
+	
+	// Zoom out incrementally until all rings are in camera
+	while(camera.zoom > 0.1 && outOfCamera.size > 0) {
+		camera.zoom *= 0.9;
+		camera.updateProjectionMatrix();
+		
+		var frustum = new THREE.Frustum();
+		camera.updateMatrixWorld(); 
+		frustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+		for(var ring of outOfCamera)
+			if(ring.isInCamera(frustum))
+				outOfCamera.delete(ring);
+	}
+	
+	// Zoom out a bit more to make sure each entire ring is in camera
+	camera.zoom *= 0.8;
+	camera.updateProjectionMatrix();
+	
+	// Render zoomed-out scene
+	renderer.render(scene, camera);
+	var data = canvas.toDataURL();
+	
+	// Create window for print image
+	var windowContent = '<!DOCTYPE html>';
+    windowContent += '<html>'
+    windowContent += '<head><title>Print canvas</title></head>';
+    windowContent += '<body>'
+    windowContent += '<img src="' + data + '">';
+    windowContent += '</body>';
+    windowContent += '</html>';
+    var printWin = window.open('','','width=340,height=260');
+    printWin.document.open();
+    printWin.document.write(windowContent);
+    printWin.document.close();
+    printWin.focus();
+    // printWin.print();
+    // printWin.close();
+	
+	// Switch rings back to Phong materials
+	for(var nodeID of ringGraph.nodes()) {
+		var ring = ringGraph.node(nodeID);
+		var color = "#" + ring.mesh.material.color.getHexString();
+		
+		ring.mesh.material = getMaterial(color);
+	}
+	
+	// Restore camera zoom and re-render scene
+	camera.zoom = zoom;
+	camera.updateProjectionMatrix();
+	renderer.render(scene, camera);
+}
+
+// Fetch a shared material or create it if it doesn't exist
+function getMaterial(color) {
+	if(!(color in materials)) {
+		materials[color] = baseMaterials[0].clone();
+		materials[color].color.setStyle(color);
+		if(materials[color].specular)
+			materials[color].specular.setStyle(color);
+	}
+	return materials[color];
+}
+
 $(document).ready(function() {
 	ringDiv = $("div.ring-div");
 	ringDiv.remove();
@@ -730,6 +823,8 @@ $(document).ready(function() {
 	renderer.setSize(canvas.clientWidth, canvas.height);
 
 	scene = new THREE.Scene();
+	
+	scene.background = new THREE.Color("white");
 
 	camera = new THREE.OrthographicCamera(canvas.clientWidth / -2, canvas.clientWidth / 2, canvas.height / 2, canvas.height / -2, 1, 10000);
 	camera.position.z = 50;
@@ -791,6 +886,21 @@ $(document).ready(function() {
 			else if(e.key === "y")
 				redo();
 		}
+		else if(!(e.ctrlKey || e.shiftKey || e.altKey)) {
+			if(e.key === "b") {
+				$("#brush-button").click();
+			}
+			else if(e.key === "m") {
+				$("#move-button").click();
+			}
+			else if(e.key === "e") {
+				$("#eraser-button").click();
+			}
+			else if(e.key === "p") {
+				e.preventDefault();
+				print();
+			}
+		}
 	};
 	
 	// $(canvas).focusout(function() {
@@ -809,6 +919,10 @@ $(document).ready(function() {
 	
 	$("#redo-button").click(function() {
 		redo();
+	});
+	
+	$("#print-button").click(function() {
+		print();
 	});
 	
 	$("#brush-button").click(function() {
@@ -850,6 +964,8 @@ $(document).ready(function() {
 	$(document).on("change", ".default-color", function() {
 		var ringDiv = $(this).closest("div.ring-div");
 		baseMaterials[ringDiv.data("geometry")].color.setStyle($(this).val());
+		if(baseMaterials[ringDiv.data("geometry")].specular)
+			baseMaterials[ringDiv.data("geometry")].specular.setStyle($(this).val());
 	});
 	
 	// Weave change: basically recreate the entire thing
