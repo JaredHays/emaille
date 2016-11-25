@@ -6,17 +6,7 @@ function Eraser() {
 }
 
 Eraser.prototype = {
-	// Fetch a shared material or create it if it doesn't exist
-	getMaterial: function(color) {
-		if(!(color in materials)) {
-			materials[color] = baseMaterials[0].clone();
-			materials[color].color.setStyle(color);
-		}
-		return materials[color];
-	},
-	
 	eraseRing: function(clicked) {
-		var eraser = this;
 		var oldColor = "#" + clicked.mesh.material.color.getHexString();;
 		var baseColor = "#" + baseMaterials[clicked.geometryIndex].color.getHexString();
 		if(oldColor === baseColor)
@@ -27,7 +17,7 @@ Eraser.prototype = {
 				clicked.mesh.material = baseMaterials[clicked.geometryIndex];
 			},
 			undo: function() {
-				clicked.mesh.material = eraser.getMaterial(oldColor);
+				clicked.mesh.material = getMaterial(oldColor);
 			}
 		}
 	},

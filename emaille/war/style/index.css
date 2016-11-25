@@ -56,6 +56,10 @@ button#redo-button {
 	background-image: url("../image/redo.svg");
 }
 
+button#print-button {
+	background-image: url("../image/printer.svg");
+}
+
 button#brush-button {
 	background-image: url("../image/paint-brush.svg");
 }

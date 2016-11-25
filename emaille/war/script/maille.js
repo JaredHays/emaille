@@ -4,15 +4,14 @@
  * TODO:
  * 1. Quality slider
  * 2. Auto quality?
- * 3. Print
- * 4. Sizes and ring counts
- * 5. Zoom slider
- * 6. Fixed sheet size option
- * 7. Cut/add (click existing ring to re-link from nearest base?)
- * 8. Map pan to right mouse?
- * 9. Undo/redo for ring settings
- * 10. Touch controls
- * 11. Weave selection page
+ * 3. Sizes and ring counts
+ * 4. Zoom slider
+ * 5. Fixed sheet size option
+ * 6. Cut/add (click existing ring to re-link from nearest base?)
+ * 7. Map pan to right mouse?
+ * 8. Undo/redo for ring settings
+ * 9. Touch controls
+ * 10. Weave selection page
  */
 
 var renderer = null;
