@@ -939,6 +939,16 @@ $(document).ready(function() {
 			tool = new Move();
 	});
 	
+	$("#cut-button").click(function() {
+		if(!(tool instanceof Cut)) 
+			tool = new Cut();
+	});
+	
+	$("#add-button").click(function() {
+		if(!(tool instanceof Add)) 
+			tool = new Add();
+	});
+	
 	$("button.tool-button").click(function() {
 		$("button.tool-button").removeClass("selected");
 		$(this).addClass("selected");

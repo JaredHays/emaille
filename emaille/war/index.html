@@ -5,6 +5,7 @@
 <title>e-maille</title>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <link rel="stylesheet" type="text/css" href="style/index.css" />
+<script type="text/javascript" src="https://use.fontawesome.com/65e3673d8d.js"></script>
 <script type="text/javascript" src="script/jquery-2.2.3.min.js"></script>
 <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.5.3/math.min.js"></script>
 <script type="text/javascript" src="script/modernizr.js"></script>
@@ -16,6 +17,8 @@
 <script type="text/javascript" src="script/tool/brush.js"></script>
 <script type="text/javascript" src="script/tool/eraser.js"></script>
 <script type="text/javascript" src="script/tool/move.js"></script>
+<script type="text/javascript" src="script/tool/cut.js"></script>
+<script type="text/javascript" src="script/tool/add.js"></script>
 <script type="text/javascript" src="script/boundedSlider.js"></script>
 <script type="text/javascript" src="script/maille.js"></script>
 </head>
@@ -37,14 +40,16 @@
 			</div>
 			
 			<div id="tool-div">
-				<button id="undo-button" class="command-button" alt="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)"></button>
-				<button id="redo-button" class="command-button" alt="Redo (Ctrl+Y)" title="Redo (Ctrl+Y)"></button>
-				<button id="print-button" class="command-button" alt="Print (P)" title="Print (P)"></button>
+				<button id="undo-button" class="command-button fa fa-undo" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)"></button>
+				<button id="redo-button" class="command-button fa fa-repeat" aria-label="Redo (Ctrl+Y)" title="Redo (Ctrl+Y)"></button>
+				<button id="print-button" class="command-button fa fa-print" aria-label="Print (P)" title="Print (P)"></button>
 				<br />
-				<button id="brush-button" class="tool-button" alt="Brush (B)" title="Brush (B)"></button>
-				<button id="eraser-button" class="tool-button" alt="Eraser (E)" title="Eraser (E)"></button>
-				<button id="move-button" class="tool-button" alt="Move (M)" title="Move (M)"></button>
-				<br />
+				<button id="brush-button" class="tool-button fa fa-paint-brush" aria-label="Brush (B)" title="Brush (B)"></button>
+				<button id="eraser-button" class="tool-button fa fa-eraser" aria-label="Eraser (E)" title="Eraser (E)"></button>
+				<button id="move-button" class="tool-button fa fa-arrows" aria-label="Move (M)" title="Move (M)"></button>
+				<br />				
+				<button id="cut-button" class="tool-button fa fa-scissors" aria-label="Cut (X)" title="Cut (X)"></button>
+				<button id="add-button" class="tool-button fa fa-plus" aria-label="Add (A)" title="Add (A)"></button>
 				<div id="sub-tool-div">
 					<input id="ring-color" type="color" value="#FFFFFF" />
 					<br />
@@ -69,7 +74,7 @@
 	</div>
 	
 	<div id="footer">
-		<div>Icons made by <a href="http://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a>. Licensed under <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
+		<div>Icons courtesy of Font Awesome by Dave Gandy - <a href="http://fontawesome.io">http://fontawesome.io</a></div>
 	</div>
 </div>
 </body>

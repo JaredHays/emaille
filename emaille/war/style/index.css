@@ -37,6 +37,7 @@ button.tool-button, button.command-button {
 	width: 32px;
 	height: 32px;
 	padding: 0px;
+	font-size: 18pt;
 }
 
 button.tool-button.selected {
@@ -48,7 +49,7 @@ button.tool-button.disabled, button.command-button.disabled {
 	opacity: 0.5;
 }
 
-button#undo-button {
+/* button#undo-button {
 	background-image: url("../image/undo.svg");
 }
 
@@ -71,6 +72,10 @@ button#eraser-button {
 button#move-button {
 	background-image: url("../image/move.svg");
 }
+
+button#cut-button {
+	background-image: url("../image/scissors.svg");
+} */
 
 div#footer {
 	clear: both;
