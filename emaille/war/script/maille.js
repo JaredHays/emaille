@@ -169,6 +169,19 @@ function Ring(ringID, basePos) {
 		return frustum.intersectsObject(this.mesh);
 	};
 	
+	this.toJSON = function() {
+		var json = {};
+		
+		for(var prop in this) {
+			if(typeof this[prop].toJSON === "function")
+				json[prop] = this[prop].toJSON();
+			else
+				json[prop] = JSON.stringify(this[prop]);
+		}
+		
+		return json;
+	};
+	
 	scene.add(this.mesh);
 	
 	this.nodeIndex = nodeIndex;
