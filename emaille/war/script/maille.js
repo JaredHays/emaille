@@ -7,18 +7,16 @@
  * 3. Sizes and ring counts
  * 4. Zoom slider
  * 5. Fixed sheet size option
- * 6. Cut/add (click existing ring to re-link from nearest base?)
+ * 6. Measure tool
  * 7. Map pan to right mouse?
- * 8. Undo/redo for ring settings
- * 9. Touch controls
- * 10. Weave selection page
+ * 8. Touch controls
+ * 9. Weave selection page
  */
 
 var renderer = null;
 var scene = null;
 var camera = null;
 var canvas = null;
-// var ringColor = null;
 
 var units = "in";
 
@@ -789,9 +787,9 @@ function print() {
 	
 	// Create window for print image
 	var windowContent = '<!DOCTYPE html>';
-    windowContent += '<html>'
+    windowContent += '<html>';
     windowContent += '<head><title>Print canvas</title></head>';
-    windowContent += '<body>'
+    windowContent += '<body>';
     windowContent += '<img src="' + data + '">';
     windowContent += '</body>';
     windowContent += '</html>';
@@ -873,11 +871,6 @@ $(document).ready(function() {
 		if(command) {
 			executeCommand(command);
 		}
-	
-		// console.log(JSON.stringify(ringGraph.nodes().reduce(function(o, v, i) {
-			// o[i] = ringGraph.node(v);
-			// return o;
-		// }, {})));
 	};
 	canvas.onmousemove = function(e) {
 		e.preventDefault();
@@ -934,11 +927,6 @@ $(document).ready(function() {
 		// mouse.down = false;
 		// tool.onMouseUp();
 	// });
-	
-	// $("#ring-color").change(function() {
-		// ringColor = $(this).val();
-	// });
-	// $("#ring-color").change();
 	
 	$("#undo-button").click(function() {
 		undo();

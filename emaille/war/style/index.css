@@ -9,6 +9,7 @@ div#control-panel {
 	float: left;
 	margin-left: 5px;
 	margin-top: 5px;
+	width: 40%;
 }
 
 div#control-panel *:not(div):not(h4) {
@@ -22,7 +23,6 @@ div#control-panel * {
 }
 
 div#control-panel .field-div {
-	width: 60%;
 }
 
 div#control-panel .field-div label {
