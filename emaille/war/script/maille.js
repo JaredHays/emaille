@@ -515,6 +515,8 @@ function setupRingDivs() {
 	$("div.ring-div").each(function() {
 		var geometryIndex = $(this).data("geometry");
 		
+		$(this).prepend("<h4>Ring type #" + (geometryIndex + 1) + "</h4>");
+		
 		// Lock/unlock checkbox
 		$(this).find(".ring-enable").attr("id", "ring-enable-" + geometryIndex).next("label").attr("for", "ring-enable-" + geometryIndex);
 		
@@ -918,6 +920,12 @@ $(document).ready(function() {
 			else if(e.key === "p") {
 				e.preventDefault();
 				print();
+			}
+			else if(e.key === "x") {
+				$("#cut-button").click();
+			}
+			else if(e.key === "a") {
+				$("#add-button").click();
 			}
 		}
 	};

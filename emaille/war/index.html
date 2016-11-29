@@ -63,25 +63,30 @@
 				<div id="sub-tool-div-div" class="bordered-div">
 					<h4>Tool Options</h4>
 					<div id="brush-button-sub-tool-div" class="sub-tool-div">
-						<input id="ring-color" type="color" value="#FFFFFF" />
+						<input id="ring-color" type="color" value="#C40A00" />
 						<br />
+					</div>
+					<div id="add-button-sub-tool-div" class="sub-tool-div">
+						Click on a ring to re-add connected rings.
 					</div>
 				</div>
 			</div>
 			
-			<div id="ring-div-div" class="bordered-div">
-				<div class="ring-div">
-					<input class="ring-enable" type="checkbox" checked /><label class="fa fa-unlock" />
-					<br />					
-					<select class="wire-gauge-system"></select><select class="wire-gauge"></select>
-					<br />
-					
-					<input class="default-color" type="color" value="#DCDCDC" />
-					<br />
-					
-					<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="range" value="1" min="0.01" max="2" step="0.01" required /><!-- <output class="inner-diameter-value"></output> --></div>
-					
-					<div class="field-div"><label for="aspect-ratio">AR: </label><input class="aspect-ratio" type="range" value="1" min="0" step="0.001" required /><!-- <output class="aspect-ratio-value"></output> --></div>
+			<div id="ring-div-div">
+				<div class="ring-div bordered-div">
+					<div class="ring-inner-div">
+						<input class="ring-enable" type="checkbox" checked /><label class="fa fa-unlock" />
+						<br />					
+						<select class="wire-gauge-system"></select><select class="wire-gauge"></select>
+						<br />
+						
+						<input class="default-color" type="color" value="#DCDCDC" />
+						<br />
+						
+						<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="range" value="1" min="0.01" max="2" step="0.01" required /></div>
+						
+						<div class="field-div"><label for="aspect-ratio">AR: </label><input class="aspect-ratio" type="range" value="1" min="0" step="0.001" required /></div>
+					</div>
 				</div>
 			</div>
 		</div>

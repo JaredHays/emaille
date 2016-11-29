@@ -7,23 +7,12 @@ function Cut() {
 
 Cut.prototype = {	
 	removeRing: function(clicked) {
-		var edges = ringGraph.nodeEdges(clicked.nodeID);
 		return {
 			execute: function() {
-				if(!ringGraph.hasNode(clicked.nodeID))
-					return;
-				
-				ringGraph.removeNode(clicked.nodeID);
-				scene.remove(clicked.mesh);
+				clicked.mesh.visible = false;
 			},
 			undo: function() {
-				if(ringGraph.hasNode(clicked.nodeID))
-					return;
-				
-				ringGraph.setNode(clicked.nodeID, clicked);
-				for(var edge of edges)
-					ringGraph.setEdge(edge);
-				scene.add(clicked.mesh);
+				clicked.mesh.visible = true;
 			}
 		}
 	},

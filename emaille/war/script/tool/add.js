@@ -7,13 +7,9 @@ function Add() {
 
 Add.prototype = {
 	relinkRing: function(clicked) {
-		var addedRings = [];
+		var hiddenRings = [];
 		return {
 			execute: function() {
-				// Already added
-				if(addedRings && addedRings.length > 0)
-					return;
-				
 				// Get base ring
 				var base;
 				// Clicked ring is base ring
@@ -40,20 +36,18 @@ Add.prototype = {
 					base = ringGraph.node(edges[0].v);
 				}
 				
-				// Re-link from base ring
-				addedRings = linkRings(base);
+				// Re-enable invisible rings linked to base ring
+				for(var edge of ringGraph.outEdges(base.nodeID)) {
+					if(!ringGraph.node(edge.w).mesh.visible) {
+						ringGraph.node(edge.w).mesh.visible = true;
+						hiddenRings.push(ringGraph.node(edge.w));
+					}
+				}
 			},
 			undo: function() {
-				// No added rings
-				if(!addedRings || addedRings.length === 0)
-					return;
-				
-				for(var ring of addedRings) {					
-					ringGraph.removeNode(ring.nodeID);
-					scene.remove(ring.mesh);
+				for(var ring of hiddenRings) {
+					ring.mesh.visible = false;
 				}
-				
-				addedRings = [];
 			}
 		}
 	},
