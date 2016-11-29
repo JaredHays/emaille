@@ -1,23 +1,59 @@
 /**
- * Eraser tool
+ * Add tool
  */
 
-function Eraser() {
+function Add() {
 }
 
-Eraser.prototype = {
-	eraseRing: function(clicked) {
-		var oldColor = "#" + clicked.mesh.material.color.getHexString();;
-		var baseColor = "#" + baseMaterials[clicked.geometryIndex].color.getHexString();
-		if(oldColor === baseColor)
-			return null;
+Add.prototype = {
+	relinkRing: function(clicked) {
+		var addedRings = [];
 		return {
 			execute: function() {
-				// Switch back to default material
-				clicked.mesh.material = baseMaterials[clicked.geometryIndex];
+				// Already added
+				if(addedRings && addedRings.length > 0)
+					return;
+				
+				// Get base ring
+				var base;
+				// Clicked ring is base ring
+				if(weave.rings[clicked.ringIndex].base) {
+					base = clicked;
+				}
+				// Clicked ring is not base ring
+				else {
+					// Get base ID
+					var baseID;
+					for(ringID in weave.structure) {
+						if(weave.structure[ringID].base) {
+							baseID = ringID;
+							break;
+						}
+					}
+					if(!baseID)
+						return;
+					
+					// Find edge with base ID
+					var edges = ringGraph.inEdges(clicked.nodeID).filter(function(edge) {return edge.name === baseID;});
+					if(edges.length === 0)
+						return;
+					base = ringGraph.node(edges[0].v);
+				}
+				
+				// Re-link from base ring
+				addedRings = linkRings(base);
 			},
 			undo: function() {
-				clicked.mesh.material = getMaterial(oldColor);
+				// No added rings
+				if(!addedRings || addedRings.length === 0)
+					return;
+				
+				for(var ring of addedRings) {					
+					ringGraph.removeNode(ring.nodeID);
+					scene.remove(ring.mesh);
+				}
+				
+				addedRings = [];
 			}
 		}
 	},
@@ -25,7 +61,7 @@ Eraser.prototype = {
 	onMouseDown: function() {
 		var clicked = getClickedRing();
 		if(clicked !== null) {
-			return this.eraseRing(clicked);
+			return this.relinkRing(clicked);
 		}
 	},
 
@@ -36,7 +72,7 @@ Eraser.prototype = {
 		if(mouse.down) {
 			var clicked = getClickedRing();
 			if(clicked !== null)
-				return this.eraseRing(clicked);
+				return this.relinkRing(clicked);
 		}
 	}
 };

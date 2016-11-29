@@ -191,7 +191,6 @@ function Ring(ringID, basePos) {
 	nodeIndex++;
 }
 
-var linkTime;
 /**
  * Link a base ring with the rest of the rings in a pattern chunk.
  * Searches for pre-existing rings and connects them before creating
@@ -281,13 +280,14 @@ function linkRings(currentRing, frustum) {
 	}
 	
 	// Search for rings that need to be created
-	var addedNewRing = false;
+	// var addedNewRing = false;
+	var addedRings = [];
 	for(ringID in structure) {
 		// Ring missing from current set
 		if(!(ringID in rings)) {
 			var ring = new Ring(ringID, currentRing.mesh.position);
 			rings[ringID] = ring;
-			addedNewRing = true;
+			addedRings.push(ring);
 		}
 	}
 
@@ -311,7 +311,7 @@ function linkRings(currentRing, frustum) {
 	}
 	
 	// Don't recurse if no new rings were added this pass
-	if(!addedNewRing)
+	if(addedRings.length === 0)
 		return;
 	
 	edgeRings.delete(currentRing);
@@ -320,10 +320,13 @@ function linkRings(currentRing, frustum) {
 	for(ringID in rings) {		
 		var ringIndex = rings[ringID].ringIndex;
 		if(ringID !== baseID && weave.rings[ringIndex].base) {
-			linkRings(rings[ringID], frustum);
+			var result = linkRings(rings[ringID], frustum);
+			if(result && result.length > 0)
+				addedRings = addedRings.concat(result);
 		}
 	}
 	
+	return addedRings;
 }
 
 /**
