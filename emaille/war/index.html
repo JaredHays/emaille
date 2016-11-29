@@ -29,40 +29,54 @@
 		<canvas id="canvas" width="1080" height="720" class="ten columns"></canvas>
 		
 		<div id="control-panel" class="row two columns">
-			<div id="top-control-div" class="row">
-				Units: <br />
-				<input id="units-in" class="two columns" type="radio" name="units" value="in" checked /><label for="units-in" class="one column">in.</label>
-				<input id="units-mm" class="two columns" type="radio" name="units" value="mm"><label for="units-mm" class="one column">mm.</label>
-				<br />
+			<div id="units-div" class="row bordered-div">
+				<h4>Units</h4>
+				<div id="units-inner-div">
+					<input id="units-in" class="two columns" type="radio" name="units" value="in" checked /><label for="units-in" class="one column">in.</label>
+					<input id="units-mm" class="two columns" type="radio" name="units" value="mm"><label for="units-mm" class="one column">mm.</label>
+					<br />
+				</div>
 				
 				<select id="weave"></select>
 				<br />
 			</div>
 			
-			<div id="tool-div">
-				<button id="undo-button" class="command-button fa fa-undo" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)"></button>
-				<button id="redo-button" class="command-button fa fa-repeat" aria-label="Redo (Ctrl+Y)" title="Redo (Ctrl+Y)"></button>
-				<button id="print-button" class="command-button fa fa-print" aria-label="Print (P)" title="Print (P)"></button>
-				<br />
-				<button id="brush-button" class="tool-button fa fa-paint-brush" aria-label="Brush (B)" title="Brush (B)"></button>
-				<button id="eraser-button" class="tool-button fa fa-eraser" aria-label="Eraser (E)" title="Eraser (E)"></button>
-				<button id="move-button" class="tool-button fa fa-arrows" aria-label="Move (M)" title="Move (M)"></button>
-				<br />				
-				<button id="cut-button" class="tool-button fa fa-scissors" aria-label="Cut (X)" title="Cut (X)"></button>
-				<button id="add-button" class="tool-button fa fa-plus" aria-label="Add (A)" title="Add (A)"></button>
-				<div id="sub-tool-div">
-					<input id="ring-color" type="color" value="#FFFFFF" />
-					<br />
+			<div id="command-div" class="bordered-div">
+				<h4>Commands</h4>
+				<div id="command-inner-div">
+					<button id="undo-button" class="command-button fa fa-undo" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)"></button>
+					<button id="redo-button" class="command-button fa fa-repeat" aria-label="Redo (Ctrl+Y)" title="Redo (Ctrl+Y)"></button>
+					<button id="print-button" class="command-button fa fa-print" aria-label="Print (P)" title="Print (P)"></button>
 				</div>
 			</div>
 			
-			<div id="ring-div-div">
+			<div id="tool-div" class="bordered-div">
+				<h4>Tools</h4>
+				<div id="tool-inner-div">
+					<button id="brush-button" class="tool-button fa fa-paint-brush" aria-label="Brush (B)" title="Brush (B)"></button>
+					<button id="eraser-button" class="tool-button fa fa-eraser" aria-label="Eraser (E)" title="Eraser (E)"></button>
+					<button id="move-button" class="tool-button fa fa-arrows" aria-label="Move (M)" title="Move (M)"></button>
+					<br />				
+					<button id="cut-button" class="tool-button fa fa-scissors" aria-label="Cut (X)" title="Cut (X)"></button>
+					<button id="add-button" class="tool-button fa fa-plus" aria-label="Add (A)" title="Add (A)"></button>
+				</div>
+				<div id="sub-tool-div-div" class="bordered-div">
+					<h4>Tool Options</h4>
+					<div id="brush-button-sub-tool-div" class="sub-tool-div">
+						<input id="ring-color" type="color" value="#FFFFFF" />
+						<br />
+					</div>
+				</div>
+			</div>
+			
+			<div id="ring-div-div" class="bordered-div">
 				<div class="ring-div">
-					<input class="ring-enable" type="checkbox" checked />
-					<input class="default-color" type="color" value="#DCDCDC" />
+					<input class="ring-enable" type="checkbox" checked /><label class="fa fa-unlock" />
+					<br />					
+					<select class="wire-gauge-system"></select><select class="wire-gauge"></select>
 					<br />
 					
-					<select class="wire-gauge-system"></select><select class="wire-gauge"></select>
+					<input class="default-color" type="color" value="#DCDCDC" />
 					<br />
 					
 					<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="range" value="1" min="0.01" max="2" step="0.01" required /><!-- <output class="inner-diameter-value"></output> --></div>

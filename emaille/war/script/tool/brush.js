@@ -7,7 +7,7 @@ function Brush() {
 
 Brush.prototype = {	
 	paintRing: function(clicked) {
-		var newColor = ringColor;
+		var newColor = $("#ring-color").val();
 		var oldColor = "#" + clicked.mesh.material.color.getHexString();
 		if(oldColor === newColor)
 			return null;

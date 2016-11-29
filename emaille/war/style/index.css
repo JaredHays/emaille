@@ -8,17 +8,21 @@ canvas {
 div#control-panel {
 	float: left;
 	margin-left: 5px;
+	margin-top: 5px;
 }
 
-div#control-panel * {
+div#control-panel *:not(div):not(h4) {
 	margin-top: 2px;
 	margin-right: 2px;
 	margin-bottom: 2px;
+}
+
+div#control-panel * {
 	vertical-align: middle;
 }
 
 div#control-panel .field-div {
-	width: 100%;
+	width: 60%;
 }
 
 div#control-panel .field-div label {
@@ -28,9 +32,33 @@ div#control-panel .field-div label {
 	padding-right: 5px;
 }
 
-div#top-control-div label{
+div#units-div label{
 	margin-left: 0px;
 	margin-right: 10px;
+}
+
+div.bordered-div {
+	border-style: solid;
+	border-width: 1px;
+	padding: 5px;
+	box-sizing: border-box;
+	margin-top: 10px;
+}
+
+div.bordered-div h4 {
+	font-size: 1.5rem;
+	font-weight: bold;
+	font-variant: small-caps;
+	display: inline-block;
+	margin-top: -3rem;
+	background-color: white;
+	margin-bottom: 0px;
+	padding-left: 1%;
+	padding-right: 1%;
+}
+
+div.bordered-div h4 + div {
+	margin-top: -1.5rem;
 }
 
 button.tool-button, button.command-button {
@@ -48,34 +76,6 @@ button.tool-button.selected {
 button.tool-button.disabled, button.command-button.disabled {
 	opacity: 0.5;
 }
-
-/* button#undo-button {
-	background-image: url("../image/undo.svg");
-}
-
-button#redo-button {
-	background-image: url("../image/redo.svg");
-}
-
-button#print-button {
-	background-image: url("../image/printer.svg");
-}
-
-button#brush-button {
-	background-image: url("../image/paint-brush.svg");
-}
-
-button#eraser-button {
-	background-image: url("../image/eraser.svg");
-}
-
-button#move-button {
-	background-image: url("../image/move.svg");
-}
-
-button#cut-button {
-	background-image: url("../image/scissors.svg");
-} */
 
 div#footer {
 	clear: both;
@@ -100,6 +100,11 @@ div#control-panel .slider-max {
 
 div#control-panel .slider-value {
 	font-size: 10pt;
+	width: 10%;
+}
+
+input.ring-enable {
+	display: none;
 }
 
 input::-webkit-outer-spin-button,
@@ -107,4 +112,43 @@ input::-webkit-inner-spin-button {
     /* display: none; <- Crashes Chrome on hover */
     -webkit-appearance: none;
     margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+
+
+/* Base Styles
+–––––––––––––––––––––––––––––––––––––––––––––––––– */
+/* NOTE
+html is set to 62.5% so that all the REM measurements throughout Skeleton
+are based on 10px sizing. So basically 1.5rem = 15px :) */
+html {
+  font-size: 62.5%; }
+body {
+  font-size: 1.5em; /* currently ems cause chrome bug misinterpreting rems on body element */
+  line-height: 1.6;
+  font-weight: 400;
+  font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #222; }
+
+
+/* Typography
+–––––––––––––––––––––––––––––––––––––––––––––––––– */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: 2rem;
+  font-weight: 300; }
+h1 { font-size: 4.0rem; line-height: 1.2;  letter-spacing: -.1rem;}
+h2 { font-size: 3.6rem; line-height: 1.25; letter-spacing: -.1rem; }
+h3 { font-size: 3.0rem; line-height: 1.3;  letter-spacing: -.1rem; }
+h4 { font-size: 2.4rem; line-height: 1.35; letter-spacing: -.08rem; }
+h5 { font-size: 1.8rem; line-height: 1.5;  letter-spacing: -.05rem; }
+h6 { font-size: 1.5rem; line-height: 1.6;  letter-spacing: 0; }
+
+/* Larger than phablet */
+@media (min-width: 550px) {
+  h1 { font-size: 5.0rem; }
+  h2 { font-size: 4.2rem; }
+  h3 { font-size: 3.6rem; }
+  h4 { font-size: 3.0rem; }
+  h5 { font-size: 2.4rem; }
+  h6 { font-size: 1.5rem; }
 }

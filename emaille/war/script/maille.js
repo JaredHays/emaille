@@ -18,7 +18,7 @@ var renderer = null;
 var scene = null;
 var camera = null;
 var canvas = null;
-var ringColor = null;
+// var ringColor = null;
 
 var units = "in";
 
@@ -90,12 +90,10 @@ function run() {
  * Raycast from the cursor to fetch the clicked ring.
  * Raycast results are cached, so this is surprisingly not slow.
  */
-function getClickedRing() {
-	// var t0 = performance.now();	
+function getClickedRing() {	
 	raycaster.setFromCamera(mouse.pos, camera);
 	var result = raycaster.intersectObjects(scene.children);
 	result = result.length > 0 && ringEnabledFlags[ringGraph.node(result[0].object.nodeID).geometryIndex] ? ringGraph.node(result[0].object.nodeID) : null;
-	// console.log("raycast time: " + (performance.now() - t0).toFixed(2));
 	return result;
 }
 
@@ -515,10 +513,14 @@ function resetRingFlag(currentRing) {
  */
 function setupRingDivs() {
 	$("div.ring-div").each(function() {
+		var geometryIndex = $(this).data("geometry");
+		
+		// Lock/unlock checkbox
+		$(this).find(".ring-enable").attr("id", "ring-enable-" + geometryIndex).next("label").attr("for", "ring-enable-" + geometryIndex);
+		
 		// Wire gauge system
 		var wireGaugeSystem = $(this).find(".wire-gauge-system");
 		var selected = "";
-		var geometryIndex = $(this).data("geometry");
 		var geometry = weave.geometries[geometryIndex];
 		if(geometry.defaults && geometry.defaults.wireSystem) {
 			selected = geometry.defaults.wireSystem;
@@ -555,7 +557,9 @@ function setupRingDivs() {
 		var options = {
 			"minClass": "slider-min unit-field", 
 			"maxClass": "slider-max unit-field", 
-			"valueClass": "slider-value unit-field"};
+			"valueClass": "slider-value unit-field",
+			"bubble": false
+		};
 		innerDiameter.boundedSlider(options);
 		aspectRatio.boundedSlider(options);
 		innerDiameter.val(Number(innerDiameter.val()).toFixed(2)).change();
@@ -923,10 +927,10 @@ $(document).ready(function() {
 		// tool.onMouseUp();
 	// });
 	
-	$("#ring-color").change(function() {
-		ringColor = $(this).val();
-	});
-	$("#ring-color").change();
+	// $("#ring-color").change(function() {
+		// ringColor = $(this).val();
+	// });
+	// $("#ring-color").change();
 	
 	$("#undo-button").click(function() {
 		undo();
@@ -968,7 +972,11 @@ $(document).ready(function() {
 	$("button.tool-button").click(function() {
 		$("button.tool-button").removeClass("selected");
 		$(this).addClass("selected");
+		$(".sub-tool-div").css("display", "none").removeClass("selected");
+		$("#" + $(this).attr("id") + "-sub-tool-div").addClass("selected").css("display", "");
+		$("#sub-tool-div-div").css("display", $(".sub-tool-div.selected").length > 0 ? "" : "none");
 	});
+	
 	$("#brush-button").click();
 	
 	$(document).on("change", ".wire-gauge-system", function() {
@@ -1083,15 +1091,17 @@ $(document).ready(function() {
 	// Enable/disable rings
 	$(document).on("change", ".ring-enable", function() {
 		var ringDiv = $(this).closest("div.ring-div");
-		ringEnabledFlags[ringDiv.data("geometry")] = $(this).prop("checked");
+		var checked = $(this).prop("checked");
+		ringEnabledFlags[ringDiv.data("geometry")] = checked;
 		for(var nodeID of ringGraph.nodes()) {
 			if(ringGraph.node(nodeID).geometryIndex === ringDiv.data("geometry")) {
 				// ringGraph.node(nodeID).mesh.material.blending = $(this).prop("checked") ? THREE.NormalBlending : THREE.CustomBlending;
-				ringGraph.node(nodeID).mesh.material.transparent = !$(this).prop("checked");
-				ringGraph.node(nodeID).mesh.material.opacity = $(this).prop("checked") ? 1 : 0.5;
+				ringGraph.node(nodeID).mesh.material.transparent = !checked;
+				ringGraph.node(nodeID).mesh.material.opacity = checked ? 1 : 0.5;
 				// ringGraph.node(nodeID).mesh.material.needsUpdate = true;
 			}
 		}
+		$(this).next("label").removeClass(checked ? "fa-lock" : "fa-unlock").addClass(checked ? "fa-unlock" : "fa-lock");
 	});
 	
 	loadStaticData();

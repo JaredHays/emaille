@@ -22,7 +22,8 @@
 		var self = this;
 		this.elem = elem;
 		this.options = $.extend({
-			"decimals": 2
+			"decimals": 2,
+			"bubble": true
 		}, options);
 		
 		self.min = elem.attr("min");
@@ -39,23 +40,38 @@
 		if("maxClass" in self.options)
 			self.maxSpan.addClass(self.options.maxClass);
 		
-		this.valueSpan = $("<output readonly type='number' class='bounded-slider-value'></output>").val(Number(self.elem.val()).toFixed(self.options.decimals));
+		this.valueSpan = $("<input readonly type='number' class='bounded-slider-value'></output>").val(Number(self.elem.val()).toFixed(self.options.decimals));
 		self.maxSpan.after(self.valueSpan);
 		if("valueClass" in self.options) 
 			self.valueSpan.addClass(self.options.valueClass);
 		
-		var valuePos = function() {
-			var pos = self.elem.position();
-			var offset = -self.valueSpan.width() / 2;
-			var left = (self.elem.val() - self.elem.attr("min")) / (self.elem.attr("max") - self.elem.attr("min"));
-			left = Math.clamp(left, 0, 1) * self.elem.width() + offset;
-			return pos.left + left;
-		};
-		self.valueSpan.css("left", valuePos());
-		self.valueSpan.css("top", self.elem.position().top);
-		var div = self.elem.closest("div");
-		div.height(div.height() + (self.valueSpan.height() / 2))
-			.css("padding-top", (div.css("padding-top").replace("px", "") + self.valueSpan.height()) + "px");
+		// Value bubbles
+		if(self.options.bubble) {		
+			var valuePos = function() {
+				var pos = self.elem.position();
+				var offset = -self.valueSpan.width() / 2;
+				var left = (self.elem.val() - self.elem.attr("min")) / (self.elem.attr("max") - self.elem.attr("min"));
+				left = Math.clamp(left, 0, 1) * self.elem.width() + offset;
+				return pos.left + left;
+			};
+			self.valueSpan.css("left", valuePos());
+			self.valueSpan.css("top", self.elem.position().top);
+			
+			var div = self.elem.closest("div");
+			div.height(div.height() + (self.valueSpan.height() / 2))
+				.css("padding-top", (div.css("padding-top").replace("px", "") + self.valueSpan.height()) + "px");
+		}
+		// Regular value inputs
+		else {
+			self.valueSpan.removeClass("bounded-slider-value");
+			self.valueSpan.attr("readonly", false);
+			var valuePos = function() {
+				return self.valueSpan.position().left;
+			};
+			self.valueSpan.on("change", function() {
+				self.elem.val(self.valueSpan.val()).trigger("input");
+			});
+		}
 		
 		self.elem.on("change", function() {
 			self.valueSpan.val(Number($(this).val()).toFixed(self.options.decimals)).css("left", valuePos());
