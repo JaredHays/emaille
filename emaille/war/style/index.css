@@ -8,8 +8,8 @@ canvas {
 div#control-panel {
 	float: left;
 	margin-left: 5px;
-	margin-top: 5px;
-	width: 40%;
+	margin-top: -5px;
+	width: 30%;
 }
 
 div#control-panel *:not(div):not(h4) {
@@ -25,11 +25,14 @@ div#control-panel * {
 div#control-panel .field-div {
 }
 
-div#control-panel .field-div label {
+div.ring-inner-div label {
 	text-align: right;
-	width: 25px;
 	display: inline-block;
 	padding-right: 5px;
+}
+
+div.field-div label {	
+	width: 25px;
 }
 
 div#units-div label{
@@ -77,7 +80,7 @@ button.tool-button.disabled, button.command-button.disabled {
 	opacity: 0.5;
 }
 
-div#footer {
+footer {
 	clear: both;
 	font-size: 8pt;
 	padding-top: 80px;
@@ -103,8 +106,36 @@ div#control-panel .slider-value {
 	width: 10%;
 }
 
+div.ring-inner-div {
+	font-size: 1.25rem;
+}
+
+div#control-panel div.ring-inner-div hr {
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+}
+
 input.ring-enable {
 	display: none;
+}
+
+table.ring-stats-table {
+	width: 50%;
+	border-collapse: collapse;
+}
+
+table.ring-stats-table th {
+	text-align: left;
+	font-weight: 1.25rem;
+    border-bottom: 1px solid #888888;
+}
+
+table.ring-stats-table td {
+    border-bottom: 1px solid #888888;
+}
+
+table.ring-stats-table td.ring-color-button-cell {
+	width: 3rem;
 }
 
 .ring-color-button {

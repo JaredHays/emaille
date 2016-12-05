@@ -834,13 +834,13 @@ function getMaterial(color) {
 		materials[color].color.setStyle(color);
 		if(materials[color].specular)
 			materials[color].specular.setStyle(color);
-		
-		// Add color to ring color counts
-		for(var i = 0; i < weave.geometries.length; i++) {
-			if(!(color in ringColorCounts[i]))
-				ringColorCounts[i][color] = 0;
-		}
 	}	
+		
+	// Add color to ring color counts
+	for(var i = 0; i < weave.geometries.length; i++) {
+		if(!(color in ringColorCounts[i]))
+			ringColorCounts[i][color] = 0;
+	}
 	return materials[color];
 }
 
@@ -870,14 +870,17 @@ $(document).ready(function() {
 		canvas: canvas,
 		antialias: true
 	});
+	
+	var width = ($(window).width() - $("div#control-panel").width() - $("div#control-panel").css("margin-left").replace("px", "")) * 0.98;
+	var height = width * 9 / 16;
 
-	renderer.setSize(canvas.clientWidth, canvas.height);
+	renderer.setSize(width, height);
 
 	scene = new THREE.Scene();
 	
 	scene.background = new THREE.Color("white");
 
-	camera = new THREE.OrthographicCamera(canvas.clientWidth / -2, canvas.clientWidth / 2, canvas.height / 2, canvas.height / -2, 1, 10000);
+	camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 1, 10000);
 	camera.position.z = 50;
 	camera.minZoom = 1 / 3;
 	camera.maxZoom = 2;
