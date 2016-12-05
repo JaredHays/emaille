@@ -8,8 +8,11 @@ function Add() {
 Add.prototype = {
 	relinkRing: function(clicked) {
 		var hiddenRings = [];
+		var geometryIndexes = new Set();
 		return {
 			execute: function() {
+				hiddenRings = [];
+				geometryIndexes = new Set();
 				// Get base ring
 				var base;
 				// Clicked ring is base ring
@@ -38,16 +41,26 @@ Add.prototype = {
 				
 				// Re-enable invisible rings linked to base ring
 				for(var edge of ringGraph.outEdges(base.nodeID)) {
-					if(!ringGraph.node(edge.w).mesh.visible) {
-						ringGraph.node(edge.w).mesh.visible = true;
-						hiddenRings.push(ringGraph.node(edge.w));
+					var ring = ringGraph.node(edge.w);
+					if(!ring.mesh.visible) {
+						ring.mesh.visible = true;
+						ringColorCounts[ring.geometryIndex]["#" + ring.mesh.material.color.getHexString()]++;
+						hiddenRings.push(ring);
+						geometryIndexes.add(ring.geometryIndex);
 					}
 				}
+				
+				for(var geometryIndex in geometryIndexes)
+					updateRingStats(geometryIndex);
 			},
 			undo: function() {
 				for(var ring of hiddenRings) {
 					ring.mesh.visible = false;
+					ringColorCounts[ring.geometryIndex]["#" + ring.mesh.material.color.getHexString()]--;
 				}
+				
+				for(var geometryIndex in geometryIndexes)
+					updateRingStats(geometryIndex);
 			}
 		}
 	},

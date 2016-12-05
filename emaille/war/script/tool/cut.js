@@ -10,9 +10,13 @@ Cut.prototype = {
 		return {
 			execute: function() {
 				clicked.mesh.visible = false;
+				ringColorCounts[clicked.geometryIndex]["#" + clicked.mesh.material.color.getHexString()]--;
+				updateRingStats(clicked.geometryIndex);
 			},
 			undo: function() {
 				clicked.mesh.visible = true;
+				ringColorCounts[clicked.geometryIndex]["#" + clicked.mesh.material.color.getHexString()]++;
+				updateRingStats(clicked.geometryIndex);
 			}
 		}
 	},

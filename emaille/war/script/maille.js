@@ -2,15 +2,15 @@
 
 /*
  * TODO:
- * 1. Quality slider
- * 2. Auto quality?
- * 3. Sizes and ring counts
- * 4. Zoom slider
- * 5. Fixed sheet size option
- * 6. Measure tool
- * 7. Map pan to right mouse?
- * 8. Touch controls
- * 9. Weave selection page
+ * . Quality slider
+ * . Auto quality?
+ * . Sizes and ring counts
+ * . Zoom slider
+ * . Fixed sheet size option
+ * . Measure tool
+ * . Map pan to right mouse?
+ * . Touch controls
+ * . Weave selection page
  */
 
 var renderer = null;
@@ -27,6 +27,7 @@ var weave = null;
 var baseGeometries = [];
 var baseMaterials = [];
 var materials = {};
+var ringColorCounts = [];
 var ringEnabledFlags;
 
 var ringRotations;
@@ -185,6 +186,8 @@ function Ring(ringID, basePos) {
 	this.mesh.nodeID = this.nodeID;
 	ringGraph.setNode(this.nodeID, this);
 	nodeIndex++;
+	
+	ringColorCounts[this.geometryIndex]["#" + this.mesh.material.color.getHexString()]++;
 }
 
 /**
@@ -337,8 +340,10 @@ function createRings() {
 	for(var i = 0; i < weave.geometries.length; i++) {
 		var radius = $("div#ring-div-" + i + " .inner-diameter").val() * scale / 2;
 		var tube = getSelectedWireGauge(i) * scale;
+		var color = $("div#ring-div-" + i).find(".default-color").val();
 		baseGeometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
-		baseMaterials[i] = new THREE.MeshPhongMaterial({color: $("div#ring-div-" + i).find(".default-color").val(), specular: $("div#ring-div-" + i).find(".default-color").val(), shininess: 60, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1});
+		baseMaterials[i] = new THREE.MeshPhongMaterial({color: color, specular: color, shininess: 60, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1});
+		ringColorCounts[i][color] = 0;
 	}
 	// Ring-defined rotations (all around y axis)
 	ringRotations = [];
@@ -385,6 +390,10 @@ function createRings() {
 	if(logPerformance) {
 		console.log("children: " + scene.children.length);
 		console.log("creation time: " + (performance.now() - t0).toFixed(2));
+	}
+	
+	for(var i = 0; i < weave.geometries.length; i++) {
+		updateRingStats(i);
 	}
 }
 
@@ -516,7 +525,8 @@ function setupRingDivs() {
 		$(this).prepend("<h4>Ring type #" + (geometryIndex + 1) + "</h4>");
 		
 		// Lock/unlock checkbox
-		$(this).find(".ring-enable").attr("id", "ring-enable-" + geometryIndex).next("label").attr("for", "ring-enable-" + geometryIndex);
+		var ringEnable = $(this).find(".ring-enable").attr("id", "ring-enable-" + geometryIndex);
+		ringEnable.next("label").attr("for", "ring-enable-" + geometryIndex).css("width", ringEnable.css("width")).css("height", ringEnable.css("height"));
 		
 		// Wire gauge system
 		var wireGaugeSystem = $(this).find(".wire-gauge-system");
@@ -656,6 +666,7 @@ function setupWeave() {
 	nodeIndex = 0;
 	edgeRings = new Set();
 	geometryUpdates = new Set();
+	ringColorCounts = [];
 	
 	// Delete all children except camera and lights
 	for(var i = scene.children.length - 1; i >= 0; i--) {
@@ -682,6 +693,7 @@ function setupWeave() {
 	for(var i = 0; i < weave.geometries.length; i++) {
 		outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
 		ringEnabledFlags[i] = true;
+		ringColorCounts[i] = {};
 	}
 	setupRingDivs();
 	
@@ -822,8 +834,28 @@ function getMaterial(color) {
 		materials[color].color.setStyle(color);
 		if(materials[color].specular)
 			materials[color].specular.setStyle(color);
-	}
+		
+		// Add color to ring color counts
+		for(var i = 0; i < weave.geometries.length; i++) {
+			if(!(color in ringColorCounts[i]))
+				ringColorCounts[i][color] = 0;
+		}
+	}	
 	return materials[color];
+}
+
+function updateRingStats(geometryIndex) {
+	var ringDiv = $("div#ring-div-" + geometryIndex);
+	var table = ringDiv.find("table.ring-stats-table tbody");
+	var counts = ringColorCounts[geometryIndex];
+	table.find("tr").remove();
+	for(var key of Object.keys(counts).sort(function(a, b) {return counts[b] - counts[a];})) {
+		// Stop once colors have zero rings
+		if(ringColorCounts[geometryIndex][key] === 0)
+			break;
+		
+		table.append("<tr><td class='ring-color-button-cell'><input type='color' class='ring-color-button' value='" + key + "'/></td><td class='ring-color-text-cell'>" + key + "</td><td class='ring-count-cell'>" + counts[key] + "</td></tr>");
+	}
 }
 
 $(document).ready(function() {
@@ -1099,6 +1131,11 @@ $(document).ready(function() {
 			}
 		}
 		$(this).next("label").removeClass(checked ? "fa-lock" : "fa-unlock").addClass(checked ? "fa-unlock" : "fa-lock");
+	});
+	
+	$(document).on("click", "input.ring-color-button", function(e) {
+		e.preventDefault();
+		$("input#ring-color").val($(this).val());
 	});
 	
 	loadStaticData();

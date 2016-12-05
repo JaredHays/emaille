@@ -107,6 +107,12 @@ input.ring-enable {
 	display: none;
 }
 
+.ring-color-button {
+	width: 2rem;
+	height: 2rem;
+	padding: 0px;
+}
+
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
     /* display: none; <- Crashes Chrome on hover */

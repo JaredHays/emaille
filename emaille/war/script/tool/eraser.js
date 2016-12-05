@@ -7,7 +7,7 @@ function Eraser() {
 
 Eraser.prototype = {
 	eraseRing: function(clicked) {
-		var oldColor = "#" + clicked.mesh.material.color.getHexString();;
+		var oldColor = "#" + clicked.mesh.material.color.getHexString();
 		var baseColor = "#" + baseMaterials[clicked.geometryIndex].color.getHexString();
 		if(oldColor === baseColor)
 			return null;
@@ -15,9 +15,15 @@ Eraser.prototype = {
 			execute: function() {
 				// Switch back to default material
 				clicked.mesh.material = baseMaterials[clicked.geometryIndex];
+				ringColorCounts[clicked.geometryIndex][oldColor]--;
+				ringColorCounts[clicked.geometryIndex][baseColor]++;
+				updateRingStats(clicked.geometryIndex);
 			},
 			undo: function() {
 				clicked.mesh.material = getMaterial(oldColor);
+				ringColorCounts[clicked.geometryIndex][oldColor]++;
+				ringColorCounts[clicked.geometryIndex][baseColor]--;
+				updateRingStats(clicked.geometryIndex);
 			}
 		}
 	},
