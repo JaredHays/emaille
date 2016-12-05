@@ -55,6 +55,7 @@ var mouse = {
 	pos: new THREE.Vector2()
 };
 var tool;
+var previousTool;
 
 var commandQueue = [];
 var commandIndex = 0;
@@ -928,12 +929,33 @@ $(document).ready(function() {
 		expandSheet();
 	};
 	
+	document.onkeydown = function(e) {
+		if(e.altKey && e.key === "Alt") {
+			if(!(tool instanceof Move) && !mouse.down) {
+				previousTool = $(tool).data("button-id");
+				$("#move-button").click();
+			}
+			else {
+				e.preventDefault();
+			}
+		}
+	};
+	
 	document.onkeyup = function(e) {
 		if(e.ctrlKey) {
 			if(e.key === "z")
 				undo();
 			else if(e.key === "y")
 				redo();
+		}
+		else if(e.key === "Alt") {
+			if(previousTool) {
+				$("#" + previousTool).click();
+			}
+			else
+				e.preventDefault();		
+			
+			previousTool = null;
 		}
 		else if(!(e.ctrlKey || e.shiftKey || e.altKey)) {
 			if(e.key === "b") {
@@ -1007,6 +1029,7 @@ $(document).ready(function() {
 		$("#" + $(this).attr("id") + "-sub-tool-div").addClass("selected").css("display", "");
 		$("#sub-tool-div-div").css("display", $(".sub-tool-div.selected").length > 0 ? "" : "none");
 		$(canvas).css("cursor", tool.cursor ? tool.cursor : "default");
+		$(tool).data("button-id", $(this).attr("id"));
 	});
 	
 	$("#brush-button").click();
