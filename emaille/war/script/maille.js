@@ -971,6 +971,7 @@ $(document).ready(function() {
 		$(".sub-tool-div").css("display", "none").removeClass("selected");
 		$("#" + $(this).attr("id") + "-sub-tool-div").addClass("selected").css("display", "");
 		$("#sub-tool-div-div").css("display", $(".sub-tool-div.selected").length > 0 ? "" : "none");
+		$(canvas).css("cursor", tool.cursor ? tool.cursor : "default");
 	});
 	
 	$("#brush-button").click();

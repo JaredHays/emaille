@@ -7,6 +7,7 @@ function Move() {
 	this.currentPos = null;
 	this.updateTime = null;
 	this.updateInterval = 100;
+	this.cursor = "move";
 }
 
 Move.prototype = {
