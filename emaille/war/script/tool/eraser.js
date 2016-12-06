@@ -14,16 +14,10 @@ Eraser.prototype = {
 		return {
 			execute: function() {
 				// Switch back to default material
-				clicked.mesh.material = baseMaterials[clicked.geometryIndex];
-				ringColorCounts[clicked.geometryIndex][oldColor]--;
-				ringColorCounts[clicked.geometryIndex][baseColor]++;
-				updateRingStats(clicked.geometryIndex);
+				clicked.changeColor();
 			},
 			undo: function() {
-				clicked.mesh.material = getMaterial(oldColor);
-				ringColorCounts[clicked.geometryIndex][oldColor]++;
-				ringColorCounts[clicked.geometryIndex][baseColor]--;
-				updateRingStats(clicked.geometryIndex);
+				clicked.changeColor(oldColor);
 			}
 		}
 	},

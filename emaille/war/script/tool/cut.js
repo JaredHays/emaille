@@ -9,14 +9,10 @@ Cut.prototype = {
 	removeRing: function(clicked) {
 		return {
 			execute: function() {
-				clicked.mesh.visible = false;
-				ringColorCounts[clicked.geometryIndex]["#" + clicked.mesh.material.color.getHexString()]--;
-				updateRingStats(clicked.geometryIndex);
+				clicked.visible = false;
 			},
 			undo: function() {
-				clicked.mesh.visible = true;
-				ringColorCounts[clicked.geometryIndex]["#" + clicked.mesh.material.color.getHexString()]++;
-				updateRingStats(clicked.geometryIndex);
+				clicked.visible = true;
 			}
 		}
 	},

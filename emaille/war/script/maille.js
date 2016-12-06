@@ -27,7 +27,6 @@ var weave = null;
 var baseGeometries = [];
 var baseMaterials = [];
 var materials = {};
-var ringColorCounts = [];
 var ringEnabledFlags;
 
 var ringRotations;
@@ -45,6 +44,7 @@ var ringDiv;
 
 var geometryUpdates = new Set();
 var positionUpdate = false;
+var statsUpdate = false;
 
 var ringGraph;
 var nodeIndex;
@@ -79,6 +79,10 @@ function run() {
 		updatePositions();
 		expandSheet();
 		positionUpdate = false;
+	}
+	if(statsUpdate) {
+		updateRingStats();
+		statsUpdate = false;
 	}
 	
 	requestAnimationFrame(run);
@@ -135,7 +139,9 @@ function Ring(ringID, basePos) {
 	var ringData = weave.rings[this.ringIndex];
 	this.geometryIndex = ringData.geometry;
 	this.mesh = new THREE.Mesh(baseGeometries[this.geometryIndex], baseMaterials[this.geometryIndex]);
-	var full_radius = this.mesh.geometry.parameters.radius + (this.mesh.geometry.parameters.tube / 2);
+	var r = this.mesh.geometry.parameters.radius;
+	var R = this.mesh.geometry.parameters.tube / 2;
+	var full_radius = r + R;
 	if(basePos)
 		 this.mesh.position.copy(basePos);
 	this.mesh.position.x += full_radius * structureData.pos.x;
@@ -180,6 +186,47 @@ function Ring(ringID, basePos) {
 		return json;
 	};
 	
+	this.changeColor = function(color) {
+		var oldColor = "#" + this.mesh.material.color.getHexString();
+		// Revert to default
+		if(!color) {
+			this.mesh.material = baseMaterials[this.geometryIndex];
+			var baseColor = "#" + this.mesh.material.color.getHexString();
+			Ring.colorCounts[this.geometryIndex][oldColor]--;
+			Ring.colorCounts[this.geometryIndex][baseColor]++;
+		}
+		// Color string
+		else if(typeof color === "string") {
+			// Add # if missing
+			color = (color[0] !== "#" ? "#" : "") + color;
+			
+			this.mesh.material = getMaterial(color);
+			Ring.colorCounts[this.geometryIndex][color]++;
+			Ring.colorCounts[this.geometryIndex][oldColor]--;
+		}
+		// Color object
+		else if(color instanceof THREE.Color) {
+			this.changeColor(color.getHexString());
+		}
+		
+		statsUpdate = true;
+	};
+	
+	Object.defineProperties(this, {
+		"volume": {
+			// πr^2 * 2πR
+			"get": function() {return Math.PI * r * r * 2 * Math.PI * R / (units === "mm" ? 1000000000 : 1);}
+		},
+		"visible": {
+			"set": function(visible) {
+				this.mesh.visible = visible;
+				
+				Ring.colorCounts[this.geometryIndex]["#" + this.mesh.material.color.getHexString()] += (visible ? 1 : -1);
+				statsUpdate = true;
+			}
+		}
+	});
+	
 	scene.add(this.mesh);
 	
 	this.nodeIndex = nodeIndex;
@@ -188,8 +235,11 @@ function Ring(ringID, basePos) {
 	ringGraph.setNode(this.nodeID, this);
 	nodeIndex++;
 	
-	ringColorCounts[this.geometryIndex]["#" + this.mesh.material.color.getHexString()]++;
+	Ring.colorCounts[this.geometryIndex]["#" + this.mesh.material.color.getHexString()]++;
+	statsUpdate = true;
 }
+
+Ring.colorCounts = [];
 
 /**
  * Link a base ring with the rest of the rings in a pattern chunk.
@@ -344,7 +394,7 @@ function createRings() {
 		var color = $("div#ring-div-" + i).find(".default-color").val();
 		baseGeometries[i] = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments);
 		baseMaterials[i] = new THREE.MeshPhongMaterial({color: color, specular: color, shininess: 60, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1});
-		ringColorCounts[i][color] = 0;
+		Ring.colorCounts[i][color] = 0;
 	}
 	// Ring-defined rotations (all around y axis)
 	ringRotations = [];
@@ -667,7 +717,7 @@ function setupWeave() {
 	nodeIndex = 0;
 	edgeRings = new Set();
 	geometryUpdates = new Set();
-	ringColorCounts = [];
+	Ring.colorCounts = [];
 	
 	// Delete all children except camera and lights
 	for(var i = scene.children.length - 1; i >= 0; i--) {
@@ -694,7 +744,7 @@ function setupWeave() {
 	for(var i = 0; i < weave.geometries.length; i++) {
 		outerDiv.append(ringDiv.clone(true).attr("id", "ring-div-" + i).data("geometry", i));
 		ringEnabledFlags[i] = true;
-		ringColorCounts[i] = {};
+		Ring.colorCounts[i] = {};
 	}
 	setupRingDivs();
 	
@@ -839,24 +889,26 @@ function getMaterial(color) {
 		
 	// Add color to ring color counts
 	for(var i = 0; i < weave.geometries.length; i++) {
-		if(!(color in ringColorCounts[i]))
-			ringColorCounts[i][color] = 0;
+		if(!(color in Ring.colorCounts[i]))
+			Ring.colorCounts[i][color] = 0;
 	}
 	return materials[color];
 }
 
-function updateRingStats(geometryIndex) {
-	var ringDiv = $("div#ring-div-" + geometryIndex);
-	var table = ringDiv.find("table.ring-stats-table tbody");
-	var counts = ringColorCounts[geometryIndex];
-	table.find("tr").remove();
-	for(var key of Object.keys(counts).sort(function(a, b) {return counts[b] - counts[a];})) {
-		// Stop once colors have zero rings
-		if(ringColorCounts[geometryIndex][key] === 0)
-			break;
-		
-		table.append("<tr><td class='ring-color-button-cell'><input type='color' class='ring-color-button' value='" + key + "'/></td><td class='ring-color-text-cell'>" + key + "</td><td class='ring-count-cell'>" + counts[key] + "</td></tr>");
-	}
+function updateRingStats() {
+	$("div.ring-div").each(function() {
+		var geometryIndex = $(this).data("geometry");
+		var table = $(this).find("table.ring-stats-table tbody");
+		var counts = Ring.colorCounts[geometryIndex];
+		table.find("tr").remove();
+		for(var key of Object.keys(counts).sort(function(a, b) {return counts[b] - counts[a];})) {
+			// Stop once colors have zero rings
+			if(Ring.colorCounts[geometryIndex][key] === 0)
+				break;
+			
+			table.append("<tr><td class='ring-color-button-cell'><input type='color' class='ring-color-button' value='" + key + "'/></td><td class='ring-color-text-cell'>" + key + "</td><td class='ring-count-cell'>" + counts[key] + "</td></tr>");
+		}
+	});
 }
 
 $(document).ready(function() {
@@ -952,8 +1004,9 @@ $(document).ready(function() {
 			if(previousTool) {
 				$("#" + previousTool).click();
 			}
-			else
+			else {
 				e.preventDefault();		
+			}
 			
 			previousTool = null;
 		}

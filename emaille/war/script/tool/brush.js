@@ -13,16 +13,10 @@ Brush.prototype = {
 			return null;
 		return {
 			execute: function() {
-				clicked.mesh.material = getMaterial(newColor);
-				ringColorCounts[clicked.geometryIndex][oldColor]--;
-				ringColorCounts[clicked.geometryIndex][newColor]++;
-				updateRingStats(clicked.geometryIndex);
+				clicked.changeColor(newColor);
 			},
 			undo: function() {
-				clicked.mesh.material = getMaterial(oldColor);
-				ringColorCounts[clicked.geometryIndex][oldColor]++;
-				ringColorCounts[clicked.geometryIndex][newColor]--;
-				updateRingStats(clicked.geometryIndex);
+				clicked.changeColor(oldColor);
 			}
 		}
 	},

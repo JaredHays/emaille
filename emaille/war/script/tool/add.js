@@ -43,8 +43,7 @@ Add.prototype = {
 				for(var edge of ringGraph.outEdges(base.nodeID)) {
 					var ring = ringGraph.node(edge.w);
 					if(!ring.mesh.visible) {
-						ring.mesh.visible = true;
-						ringColorCounts[ring.geometryIndex]["#" + ring.mesh.material.color.getHexString()]++;
+						ring.visible = true;
 						hiddenRings.push(ring);
 						geometryIndexes.add(ring.geometryIndex);
 					}
@@ -55,8 +54,7 @@ Add.prototype = {
 			},
 			undo: function() {
 				for(var ring of hiddenRings) {
-					ring.mesh.visible = false;
-					ringColorCounts[ring.geometryIndex]["#" + ring.mesh.material.color.getHexString()]--;
+					ring.visible = false;
 				}
 				
 				for(var geometryIndex in geometryIndexes)
