@@ -966,6 +966,19 @@ $(document).ready(function() {
 	light.position.set(0, 0, 1);
 
 	scene.add(light);
+	
+	window.onresize = function(e) {
+		var width = ($(window).width() - $("div#control-panel").width() - $("div#control-panel").css("margin-left").replace("px", "")) * 0.98;
+		var height = width * 9 / 16;
+
+		renderer.setSize(width, height);
+		camera.left = width / -2;
+		camera.right = width / 2;
+		camera.top = height / 2;
+		camera.bottom = height / -2;
+		camera.updateProjectionMatrix();
+		expandSheet();
+	};
 
 	canvas.onmousedown = function(e) {
 		e.preventDefault();

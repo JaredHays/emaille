@@ -29,6 +29,11 @@ div.ring-inner-div label {
 	text-align: right;
 	display: inline-block;
 	padding-right: 5px;
+	font-weight: bold;
+}
+
+label.left-align {
+	width: 24%;
 }
 
 div.field-div label {	
@@ -107,7 +112,8 @@ div#control-panel .slider-max {
 
 div#control-panel .slider-value {
 	font-size: 10pt;
-	width: 10%;
+	width: 15%;
+	margin-left: 10px;
 }
 
 div.ring-inner-div {
