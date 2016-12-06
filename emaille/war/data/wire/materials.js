@@ -1,4 +1,4 @@
-﻿{
+﻿var wireMaterials = {
 	"Stainless 304": {
 		"mm": 7999.492458,
 		"in": 0.289

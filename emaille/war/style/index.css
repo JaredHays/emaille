@@ -35,6 +35,10 @@ div.field-div label {
 	width: 25px;
 }
 
+label.weight-label {
+	margin-left: 10px;
+}
+
 div#units-div label{
 	margin-left: 0px;
 	margin-right: 10px;

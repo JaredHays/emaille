@@ -215,7 +215,7 @@ function Ring(ringID, basePos) {
 	Object.defineProperties(this, {
 		"volume": {
 			// πr^2 * 2πR
-			"get": function() {return Math.PI * r * r * 2 * Math.PI * R / (units === "mm" ? 1000000000 : 1);}
+			"get": function() {return Math.PI * r * r * 2 * Math.PI * R / (units === "mm" ? 1000000000 : 1) / (scale * scale * scale);}
 		},
 		"visible": {
 			"set": function(visible) {
@@ -599,6 +599,12 @@ function setupRingDivs() {
 			wireGauge.val(geometry.defaults.wireGauge).change();
 		}
 		
+		// Material
+		var material = $(this).find(".wire-material");
+		for(var key of Object.keys(wireMaterials).sort(function(a, b) {return a.localeCompare(b);})) {
+			material.append("<option value='" + key + "'>" + key + "</option>");
+		}
+		
 		// ID
 		var innerDiameter = $(this).find(".inner-diameter");
 		if(geometry.defaults && geometry.defaults.innerDiameter) {
@@ -700,6 +706,8 @@ function expandSheet() {
 	for(var edgeRing of edgeRings) {
 		linkRings(edgeRing, frustum);
 	}
+	
+	statsUpdate = true;
 }
 
 /**
@@ -898,6 +906,8 @@ function getMaterial(color) {
 function updateRingStats() {
 	$("div.ring-div").each(function() {
 		var geometryIndex = $(this).data("geometry");
+		
+		// Color counts
 		var table = $(this).find("table.ring-stats-table tbody");
 		var counts = Ring.colorCounts[geometryIndex];
 		table.find("tr").remove();
@@ -908,6 +918,19 @@ function updateRingStats() {
 			
 			table.append("<tr><td class='ring-color-button-cell'><input type='color' class='ring-color-button' value='" + key + "'/></td><td class='ring-color-text-cell'>" + key + "</td><td class='ring-count-cell'>" + counts[key] + "</td></tr>");
 		}
+		
+		// Weight
+		var numRings = Object.values(Ring.colorCounts[geometryIndex]).reduce(function(a, b) {return a + b;});
+		var sampleRing;
+		var nodes = ringGraph.nodes();
+		for(var i = 0; !sampleRing && i < nodes.length; i++) {
+			if(ringGraph.node(nodes[i]).geometryIndex === geometryIndex)
+				sampleRing = ringGraph.node(nodes[i]);
+		}			
+		var volume = sampleRing.volume * numRings;
+		var material = $(this).find(".wire-material").val();
+		var weight = wireMaterials[material][units] * volume;
+		$(this).find(".weight-span").html(weight.toFixed(2) + " " + (units === "mm" ? "kg." : "lbs."));
 	});
 }
 
@@ -1172,6 +1195,10 @@ $(document).ready(function() {
 		geometryUpdates.add(ringDiv.data("geometry"));
 	});
 	
+	$(document).on("change", ".wire-material", function() {
+		statsUpdate = true;
+	});
+	
 	// Switch unit-based inputs between in. and mm.
 	$(document).on("change", "input[name='units'][type='radio']", function() {
 		units = $(this).val();
@@ -1193,7 +1220,8 @@ $(document).ready(function() {
 		}
 		$("div.ring-div").each(function() {
 			createWireGaugeList($(this).data("geometry"), $(this).find(".wire-gauge-system").val());
-		});		
+		});	
+		statsUpdate = true;		
 	});
 	
 	// Enable/disable rings
