@@ -961,6 +961,9 @@ $(document).ready(function() {
 	camera.minZoom = 1 / 3;
 	camera.maxZoom = 2;
 	scene.add(camera);
+	
+	var zoomInput = $("#zoom-input");
+	zoomInput.attr("min", camera.minZoom).attr("max", camera.maxZoom).val(camera.zoom);
 
 	var light = new THREE.DirectionalLight(0xffffff, 1.0);
 	light.position.set(0, 0, 1);
@@ -1015,7 +1018,28 @@ $(document).ready(function() {
 		camera.zoom = Math.clamp(camera.zoom + (e.wheelDelta / 720), camera.minZoom, camera.maxZoom);
 		camera.updateProjectionMatrix();
 		expandSheet();
+		zoomInput.val(camera.zoom);
 	};
+	
+	zoomInput.on("input", function() {
+		camera.zoom = Math.clamp($(this).val(), camera.minZoom, camera.maxZoom);
+		camera.updateProjectionMatrix();
+		expandSheet();
+	});
+	
+	var scrollZoom = function(e) {
+		e.preventDefault();
+		// wheelDelta is +/- 120, so scale that by a factor of 6
+		zoomInput.val(Math.clamp(camera.zoom + (e.originalEvent.wheelDelta / 720), camera.minZoom, camera.maxZoom));
+		zoomInput.trigger("input");
+	};
+	
+	zoomInput.on("mouseenter", function() {
+		zoomInput.on("mousewheel", scrollZoom);
+	});
+	zoomInput.on("mouseleave", function() {
+		zoomInput.off("mousewheel", scrollZoom);
+	});
 	
 	document.onkeydown = function(e) {
 		if(e.altKey && e.key === "Alt") {

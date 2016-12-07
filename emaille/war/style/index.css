@@ -25,6 +25,11 @@ div#control-panel * {
 div#control-panel .field-div {
 }
 
+div#zoom-div label {
+	height: 16px;
+	vertical-align: middle;
+}
+
 div.ring-inner-div label {
 	text-align: right;
 	display: inline-block;
