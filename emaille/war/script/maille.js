@@ -5,10 +5,8 @@
  * . Quality slider
  * . Auto quality?
  * . Sizes and ring counts
- * . Zoom slider
  * . Fixed sheet size option
  * . Measure tool
- * . Map pan to right mouse?
  * . Touch controls
  * . Weave selection page
  */
@@ -60,7 +58,10 @@ var previousTool;
 var commandQueue = [];
 var commandIndex = 0;
 
-var logPerformance = true;
+var envSettings = $.extend({
+	logPerformance: false,
+	host: "https://e-maille.appspot.com/"
+}, localEnvSettings ? localEnvSettings : {});
 
 Math.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
@@ -105,32 +106,42 @@ function getClickedRing() {
  * Load static data from the server (wire sizes, weaves, etc.)
  */
 function loadStaticData() {
-	$.ajax({
-		url: "https://e-maille.appspot.com/data/getwires",
-		dataType: "json",
-		success: function(data) {
-			for(var i = 0; i < data.length; i++) {
-				var system = data[i];
-				wireGauges[system.name] = system;
-			}
-			setupRingDivs();
-			$.ajax({
-				url: "https://e-maille.appspot.com/data/getweaveslist",
-				dataType: "json",
-				success: function(data) {
-					var weaveList = $("#weave");
-					for(var i = 0; i < data.length; i++) {
-						var weave = data[i];
-						weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
-					}
-					weaveList.change();
-				},
-				error: function(data) {
-					console.log(data);
+	// if(envSettings.useLocalData) {
+		// var data = [{"name":"European 4-in-1","file":"euro-4-in-1"},{"name":"Japanese 6-in-1","file":"jap-6-in-1"}];
+		// for(var i = 0; i < data.length; i++) {
+			// var system = data[i];
+			// wireGauges[system.name] = system;
+		// }
+		// setupRingDivs();
+	// }
+	// else {
+		$.ajax({
+			url: envSettings.host + "data/getwires",
+			dataType: "json",
+			success: function(data) {
+				for(var i = 0; i < data.length; i++) {
+					var system = data[i];
+					wireGauges[system.name] = system;
 				}
-			});
-		}
-	});
+				setupRingDivs();
+				$.ajax({
+					url: envSettings.host + "data/getweaveslist",
+					dataType: "json",
+					success: function(data) {
+						var weaveList = $("#weave");
+						for(var i = 0; i < data.length; i++) {
+							var weave = data[i];
+							weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
+						}
+						weaveList.change();
+					},
+					error: function(data) {
+						console.log(data);
+					}
+				});
+			}
+		});
+	// }
 }
 
 function Ring(ringID, basePos) {
@@ -438,7 +449,7 @@ function createRings() {
 	
 	linkRings(currentRing, frustum);
 	
-	if(logPerformance) {
+	if(envSettings.logPerformance) {
 		console.log("children: " + scene.children.length);
 		console.log("creation time: " + (performance.now() - t0).toFixed(2));
 	}
@@ -497,7 +508,7 @@ function updateGeometries(geometryIndex) {
 	
 	
 	var t1 = performance.now();
-	if(logPerformance) {
+	if(envSettings.logPerformance) {
 		console.log("children: " + scene.children.length);
 		console.log("update geometry time: " + (t1 - t0).toFixed(2));
 	}
@@ -1007,7 +1018,11 @@ $(document).ready(function() {
 		if(command) {
 			executeCommand(command);
 		}
-	};
+	};	
+	canvas.onmouseleave = (function() {
+		mouse.down = false;
+		tool.onMouseUp();
+	});
 	canvas.oncontextmenu = function(e) {
 		e.preventDefault();
 //		tool.onMouseDown();
@@ -1093,11 +1108,6 @@ $(document).ready(function() {
 		}
 	};
 	
-	// $(canvas).focusout(function() {
-		// mouse.down = false;
-		// tool.onMouseUp();
-	// });
-	
 	$("#undo-button").click(function() {
 		undo();
 	});
@@ -1171,15 +1181,20 @@ $(document).ready(function() {
 	
 	// Weave change: basically recreate the entire thing
 	$(document).on("change", "#weave", function() {
-		// $.ajax({
-			// url: "https://e-maille.appspot.com/data/getweave?name=" + $(this).val(),
-			// dataType: "json",
-			// success: function(data) {
-				// weave = data;
-				weave = weaves[$(this).val()];
-				setupWeave();
-			// }
-		// });
+		if(envSettings.useLocalData) {
+			weave = weaves[$(this).val()];
+			setupWeave();
+		}
+		else {
+			$.ajax({
+				url: envSettings.host + "data/getweave?name=" + $(this).val(),
+				dataType: "json",
+				success: function(data) {
+					weave = data;
+					setupWeave();
+				}
+			});
+		}		
 	});
 	
 	$(document).on("change", ".inner-diameter, .aspect-ratio", function() {
