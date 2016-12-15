@@ -3,5 +3,23 @@ runtime: go
 api_version: go1
 
 handlers:
+- url: /data/wire
+  static_dir: www/data/wire
+  application_readable: true
+  
+- url: /data/weave
+  static_dir: www/data/weave
+  application_readable: true
+  
+- url: /data
+  static_dir: www/data
+  application_readable: true  
+  
+- url: /style
+  static_dir: www/style
+  
+- url: /script
+  static_dir: www/script
+  
 - url: /.*
   script: _go_app

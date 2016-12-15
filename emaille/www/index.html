@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>e-maille</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="/style/index.css" />
+<script type="text/javascript" src="https://use.fontawesome.com/65e3673d8d.js"></script>
+<script type="text/javascript" src="/script/jquery-2.2.3.min.js"></script>
+<script type="text/javascript" src="/script/math.min.js"></script>
+<script type="text/javascript" src="/script/localenv.js"></script>
+<script type="text/javascript" src="/script/modernizr.js"></script>
+<script type="text/javascript" src="/script/color-polyfill.js"></script>
+<script type="text/javascript" src="/script/three.js"></script>
+<script type="text/javascript" src="/script/graphlib.js"></script>
+<script type="text/javascript" src="/script/parser.js"></script>
+<!-- <script type="text/javascript" src="data/weave/weaves.js"></script> -->
+<!-- <script type="text/javascript" src="data/wire/materials.js"></script> -->
+<script type="text/javascript" src="/script/tool/brush.js"></script>
+<script type="text/javascript" src="/script/tool/eraser.js"></script>
+<script type="text/javascript" src="/script/tool/move.js"></script>
+<script type="text/javascript" src="/script/tool/cut.js"></script>
+<script type="text/javascript" src="/script/tool/add.js"></script>
+<script type="text/javascript" src="/script/boundedSlider.js"></script>
+<script type="text/javascript" src="/script/maille.js"></script>
+</head>
+
+<body>
+<div class="container">
+	<div class="row">
+		<canvas id="canvas" width="1080" height="720" class="ten columns"></canvas>
+		
+		<div id="control-panel" class="row two columns">
+			<input type="button" id="save-button" value="Save" />
+			<div id="units-div" class="row bordered-div">
+				<h4>Units</h4>
+				<div id="units-inner-div">
+					<input id="units-in" class="two columns" type="radio" name="units" value="in" checked /><label for="units-in" class="one column">in.</label>
+					<input id="units-mm" class="two columns" type="radio" name="units" value="mm"><label for="units-mm" class="one column">mm.</label>
+					<br />
+				</div>
+				
+				<select id="weave"></select>
+				<br />
+			</div>
+			
+			<div id="command-div" class="bordered-div">
+				<h4>Commands</h4>
+				<div id="command-inner-div">
+					<button id="undo-button" class="command-button fa fa-undo" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)"></button>
+					<button id="redo-button" class="command-button fa fa-repeat" aria-label="Redo (Ctrl+Y)" title="Redo (Ctrl+Y)"></button>
+					<button id="print-button" class="command-button fa fa-print" aria-label="Print (P)" title="Print (P)"></button>
+				</div>
+				<div id="zoom-div">
+					<label class="fa fa-search-minus"></label><input type="range" id="zoom-input" step="0.01" required /><label class="fa fa-search-plus" style="margin-left: 2px;"></label>
+				</div>
+			</div>
+			
+			<div id="tool-div" class="bordered-div">
+				<h4>Tools</h4>
+				<div id="tool-inner-div">
+					<button id="brush-button" class="tool-button fa fa-paint-brush" aria-label="Brush (B)" title="Brush (B)"></button>
+					<button id="eraser-button" class="tool-button fa fa-eraser" aria-label="Eraser (E)" title="Eraser (E)"></button>
+					<button id="move-button" class="tool-button fa fa-arrows" aria-label="Move (M)" title="Move (M)"></button>
+					<br />				
+					<button id="cut-button" class="tool-button fa fa-scissors" aria-label="Cut (X)" title="Cut (X)"></button>
+					<button id="add-button" class="tool-button fa fa-plus" aria-label="Add (A)" title="Add (A)"></button>
+				</div>
+				<div id="sub-tool-div-div" class="bordered-div">
+					<h4>Tool Options</h4>
+					<div id="brush-button-sub-tool-div" class="sub-tool-div">
+						<input id="ring-color" type="color" value="#C40A00" />
+						<br />
+					</div>
+					<div id="move-button-sub-tool-div" class="sub-tool-div">
+						Hold down Alt to toggle the Move tool.
+					</div>
+					<div id="add-button-sub-tool-div" class="sub-tool-div">
+						Click on a ring to re-add connected rings.
+					</div>
+				</div>
+			</div>
+			
+			<div id="ring-div-div">
+				<div class="ring-div bordered-div">
+					<div class="ring-inner-div">
+						<div class="ring-enable-div">
+						<input class="ring-enable" type="checkbox" checked /><label class="fa fa-unlock" aria-label="Enable/disable editing" title="Enable/disable editing" />
+						</div>				
+						<label class="left-align">Wire type:</label><select class="wire-gauge-system"></select><select class="wire-gauge"></select>
+						<br />			
+						<label class="left-align">Material:</label><select class="wire-material"></select><label class="weight-label">Weight: </label><span class="weight-span"></span>
+						<br />
+						
+						<label class="left-align">Default color:</label><input class="default-color" type="color" value="#DCDCDC" />
+						<br />
+						
+						<div class="field-div"><label for="inner-diameter">ID: </label><input class="inner-diameter unit-field" type="range" value="1" min="0.01" max="2" step="0.01" required /></div>
+						
+						<div class="field-div"><label for="aspect-ratio">AR: </label><input class="aspect-ratio" type="range" value="1" min="0" step="0.001" required /></div>
+						
+						<div class="ring-stats-table-div">
+						<hr />
+						<table class="ring-stats-table">
+						<thead><th colspan=2>Color</th><th>Rings</th></thead>
+						<tbody></tbody>
+						</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<footer>
+		<div>Icons courtesy of Font Awesome by Dave Gandy - <a href="http://fontawesome.io">http://fontawesome.io</a></div>
+	</footer>
+</div>
+</body>
+</html>
