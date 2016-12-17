@@ -20,6 +20,7 @@ type Sheet struct {
 	Author    string
 	Units     string   `datastore:",noindex"`
 	EdgeRings []string `datastore:",noindex"`
+	ColorCounts string `datastore:",noindex"`
 	Weave     string
 	Created   time.Time
 	Updated   time.Time
@@ -49,13 +50,13 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	ctxt := appengine.NewContext(req)
 
 	var edgeRings []string
-	// log.Debugf(ctxt, "edgeRings: " + req.FormValue("edgeRings"))
 	json.Unmarshal([]byte(req.FormValue("edgeRings")), &edgeRings)
 	sheet := &Sheet{
 		Data: req.FormValue("sheet"),
 		Units: req.FormValue("units"),
 		Weave: req.FormValue("weave"),
 		EdgeRings: edgeRings,
+		ColorCounts: req.FormValue("colorCounts"),
 		Created: time.Now(),
 		Updated: time.Now(),
 	}

@@ -35,7 +35,7 @@ if(!wireMaterials)
 var ringRotations;
 var structureRotations;
 
-var head = null;
+// var head = null;
 
 var scale = 100;
 var radialSegments = 8;
@@ -206,24 +206,55 @@ function loadSheetData(key) {
 	Author    string
 	Units     string   `datastore:",noindex"`
 	EdgeRings []string `datastore:",noindex"`
+	ColorCounts []string `datastore:",noindex"`
 	Weave     string
 	Created   time.Time
 	Updated   time.Time
 }
 */
+	// Suppress initial sheet creation
+	geometryUpdates = new Set();
+	
 	// Load sheet data for given key
 	var sheet;
 	$.ajax({
 		url: "/datastore/load",
 		data: {key: key},
 		success: function(data) {
+			nodeIndex = 0;
+			edgeRings = new Set();
+			geometryUpdates = new Set();
+			// Ring.colorCounts = [];
+			
+			// Delete all children except camera and lights
+			for(var i = scene.children.length - 1; i >= 0; i--) {
+				if(!(scene.children[i] instanceof THREE.Camera) && !(scene.children[i] instanceof THREE.Light)) {
+					scene.remove(scene.children[i]);
+				}
+			}
+			
 			data = JSON.parse(data);
+			
+			// console.log(data.ColorCounts);
+			// Ring.colorCounts = JSON.parse(data.ColorCounts);
+			
 			var parsedGraph = JSON.parse(data.Data);
-			ringGraph = graphlib.json.read(parsedGraph);
+			// ringGraph = graphlib.json.read(parsedGraph);
 			// console.log(ringGraph);
 			for(var nodeID in parsedGraph._nodes) {
-				ringGraph.setNode(nodeID, parsedGraph._nodes[nodeID]);
-				scene.add(ringGraph.node(nodeID).mesh);
+				var ring = new Ring(parsedGraph._nodes[nodeID]);
+				// Ring.fromJSON(parsedGraph._nodes[nodeID]);
+				// var ring = parsedGraph._nodes[nodeID];
+				// ring.mesh = new THREE.Mesh(baseGeometries[ring.geometryIndex], baseMaterials[ring.geometryIndex]);
+				// ring.mesh.material = getMaterial(ring.color);
+				ring.mesh.position.copy(parsedGraph._nodes[nodeID].position);
+				ring.mesh.rotation.copy(parsedGraph._nodes[nodeID].rotation);
+				ring.changeColor(parsedGraph._nodes[nodeID].color);
+				// delete ring.color;
+				// delete ring.position;
+				// delete ring.rotation;
+				// ringGraph.setNode(ring.nodeID, ring);
+				// scene.add(ring.mesh);
 			}
 			if(units !== data.Units) {
 				units = data.Units;
@@ -233,6 +264,8 @@ function loadSheetData(key) {
 				edgeRings.add(ringGraph.node(nodeID));
 			}
 			// console.log("nodes: " + ringGraph.nodes());
+			// positionUpdate = true;
+			// nodeIndex = ringGraph.nodeCount();
 		},
 		error: function(data) {
 			console.log(data);
@@ -240,35 +273,46 @@ function loadSheetData(key) {
 	});
 }
 
-function Ring(ringID, basePos) {
-	var structureData = weave.structure[ringID];
-	this.ringIndex = structureData.ring;
+function Ring(params) {
+	if(params.ringID) {
+		var structureData = weave.structure[params.ringID];
+		this.ringIndex = structureData.ring;
+	}
+	else if(params.ringIndex) {
+		this.ringIndex = params.ringIndex;
+	}
+	
 	var ringData = weave.rings[this.ringIndex];
 	this.geometryIndex = ringData.geometry;
 	this.mesh = new THREE.Mesh(baseGeometries[this.geometryIndex], baseMaterials[this.geometryIndex]);
+	
 	var r = this.mesh.geometry.parameters.radius;
 	var R = this.mesh.geometry.parameters.tube / 2;
-	var full_radius = r + R;
-	if(basePos)
-		 this.mesh.position.copy(basePos);
-	this.mesh.position.x += full_radius * structureData.pos.x;
-	this.mesh.position.y += full_radius * structureData.pos.y;
-	this.mesh.position.z = -50;
-	this.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
 	
-	var setQuaternion = false;
-	if(ringID in structureRotations) {
-		this.mesh.quaternion.copy(structureRotations[ringID]);
-		setQuaternion = true;
+	if(params.ringID) {
+		var full_radius = r + R;
+		if(params.basePos)
+			 this.mesh.position.copy(params.basePos);
+		this.mesh.position.x += full_radius * structureData.pos.x;
+		this.mesh.position.y += full_radius * structureData.pos.y;
+		this.mesh.position.z = -50;
+		this.mesh.position.z += full_radius * (structureData.pos.z ? structureData.pos.z : 0);
+		
+		var setQuaternion = false;
+		if(params.ringID in structureRotations) {
+			this.mesh.quaternion.copy(structureRotations[params.ringID]);
+			setQuaternion = true;
+		}
+		if(ringRotations[this.ringIndex])
+			if(setQuaternion)
+				this.mesh.quaternion.multiply(ringRotations[this.ringIndex]);
+			else
+				this.mesh.quaternion.copy(ringRotations[this.ringIndex]);
 	}
-	if(ringRotations[this.ringIndex])
-		if(setQuaternion)
-			this.mesh.quaternion.multiply(ringRotations[this.ringIndex]);
-		else
-			this.mesh.quaternion.copy(ringRotations[this.ringIndex]);
 		
 	this.mesh.material.transparent = !ringEnabledFlags[this.geometryIndex];
 	this.mesh.material.opacity = ringEnabledFlags[this.geometryIndex] ? 1 : 0.5;
+	
 	this.updated = false;
 	
 	this.isInCamera = function(frustum) {
@@ -284,11 +328,20 @@ function Ring(ringID, basePos) {
 		var json = {};
 		
 		for(var prop in this) {
-			if(typeof this[prop].toJSON === "function")
+			// Don't bother serializing the mesh since it can't be deserialized
+			if(prop === "mesh")
+				continue;
+			else if(typeof this[prop] === "string")
+				json[prop] = this[prop];
+			else if(typeof this[prop].toJSON === "function")
 				json[prop] = this[prop].toJSON();
 			else
 				json[prop] = JSON.stringify(this[prop]);
 		}
+		
+		json.color = "#" + this.mesh.material.color.getHexString();
+		json.position = this.mesh.position;
+		json.rotation = this.mesh.rotation;
 		
 		return json;
 	};
@@ -442,7 +495,7 @@ function linkRings(currentRing, frustum) {
 	for(ringID in structure) {
 		// Ring missing from current set
 		if(!(ringID in rings)) {
-			var ring = new Ring(ringID, currentRing.mesh.position);
+			var ring = new Ring({ringID: ringID, basePos: currentRing.mesh.position});
 			rings[ringID] = ring;
 			addedRings.push(ring);
 		}
@@ -532,9 +585,9 @@ function createRings() {
 		}
 	}
 	
-	var currentRing = new Ring("base");
+	var currentRing = new Ring({ringID: "base"});
 	
-	head = currentRing;
+	// head = currentRing;
 	
 	// Setup for the in-camera test
 	var frustum = new THREE.Frustum();
@@ -583,14 +636,14 @@ function updateGeometries(geometryIndex) {
 		return;
 	
 	// No rings to update, create rings instead
-	if(head === null) {
+	if(ringGraph === null || ringGraph.nodeCount() === 0) {
 		createRings();
 		return;
 	}
 	
 	var t0 = performance.now();	
 	
-	var currentRing = head;
+	var currentRing = ringGraph.node(ringGraph.nodes()[0]);
 
 	if(baseGeometries[geometryIndex])
 		baseGeometries[geometryIndex].dispose();
@@ -637,7 +690,7 @@ function updatePosition(currentRing, ringID, basePos) {
  * Update the positions of all rings, fanning out from the center
  */
 function updatePositions() {
-	var currentRing = head;
+	var currentRing = ringGraph.node(ringGraph.nodes()[0]);
 	
 	// Get ID of base ring in pattern
 	var structure = weave.structure;
@@ -841,7 +894,7 @@ function setupWeave() {
 		}
 	}
 	
-	head = null;
+	// head = null;
 	
 	ringEnabledFlags = [];
 	// Parse coordinate values in case they are expressions
@@ -1397,7 +1450,8 @@ $(document).ready(function() {
 			sheet: JSON.stringify(ringGraph),
 			weave: weave.name,
 			units: units,
-			edgeRings: JSON.stringify(Array.from(edgeRings, function(ring) {return ring.nodeID;}))
+			edgeRings: JSON.stringify(Array.from(edgeRings, function(ring) {return ring.nodeID;})),
+			colorCounts: JSON.stringify(Ring.colorCounts)
 		}, function(data) {
 			console.log(data);
 			window.location.pathname += data
