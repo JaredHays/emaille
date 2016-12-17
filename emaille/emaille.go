@@ -1,10 +1,12 @@
 package emaille
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"net/http"
+	"strconv"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -16,11 +18,11 @@ import (
 )
 
 type Sheet struct {
-	Data      string `datastore:",noindex"`
+	Data      []byte `datastore:",noindex"`
+	Graph     string `datastore:"-,noindex"`
 	Author    string
 	Units     string   `datastore:",noindex"`
 	EdgeRings []string `datastore:",noindex"`
-	ColorCounts string `datastore:",noindex"`
 	Weave     string
 	Created   time.Time
 	Updated   time.Time
@@ -51,14 +53,22 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 
 	var edgeRings []string
 	json.Unmarshal([]byte(req.FormValue("edgeRings")), &edgeRings)
+
+	buffer := new(bytes.Buffer)
+	gz := gzip.NewWriter(buffer)
+
+	if _, err := gz.Write([]byte(req.FormValue("graph"))); err != nil {
+		log.Errorf(ctxt, err.Error())
+	}
+	defer gz.Close()
+
 	sheet := &Sheet{
-		Data: req.FormValue("sheet"),
-		Units: req.FormValue("units"),
-		Weave: req.FormValue("weave"),
+		Data:      buffer.Bytes(),
+		Units:     req.FormValue("units"),
+		Weave:     req.FormValue("weave"),
 		EdgeRings: edgeRings,
-		ColorCounts: req.FormValue("colorCounts"),
-		Created: time.Now(),
-		Updated: time.Now(),
+		Created:   time.Now(),
+		Updated:   time.Now(),
 	}
 	if u := user.Current(ctxt); u != nil {
 		sheet.Author = u.String()
@@ -81,14 +91,28 @@ func loadSheet(resp http.ResponseWriter, req *http.Request) {
 	ctxt := appengine.NewContext(req)
 
 	log.Debugf(ctxt, strconv.FormatInt(fromBase62(req.FormValue("key")), 10))
-	
+
 	key := datastore.NewKey(ctxt, "Sheet", "", fromBase62(req.FormValue("key")), nil)
 	sheet := new(Sheet)
 	if err := datastore.Get(ctxt, key, sheet); err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
+	buffer := new(bytes.Buffer)
+	gz, err := gzip.NewReader(bytes.NewReader(sheet.Data))
+	if err != nil {
+		log.Errorf(ctxt, "107: "+err.Error())
+	}
+
+	if _, err := buffer.ReadFrom(gz); err != nil {
+		log.Errorf(ctxt, "111: "+err.Error())
+	}
+	defer gz.Close()
+
+	sheet.Data = make([]byte, 0)
+	sheet.Graph = buffer.String()
+
 	json, err := json.Marshal(sheet)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
