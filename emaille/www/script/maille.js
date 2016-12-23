@@ -10,7 +10,7 @@
  * . Weave selection page
  */
 
-var API_KEY = "AIzaSyBYapawbMZ9l9EZ_fIuimNjvVIwUWLNXIY";
+//var API_KEY = "AIzaSyBYapawbMZ9l9EZ_fIuimNjvVIwUWLNXIY";
 var key;
 
 var renderer = null;
@@ -240,7 +240,7 @@ function loadSheetData(key) {
 			// console.log(data.ColorCounts);
 			// Ring.colorCounts = JSON.parse(data.ColorCounts);
 			
-			var parsedGraph = JSON.parse(data.Data);
+			var parsedGraph = JSON.parse(data.Graph);
 			// ringGraph = graphlib.json.read(parsedGraph);
 			// console.log(ringGraph);
 			for(var nodeID in parsedGraph._nodes) {
@@ -1449,11 +1449,10 @@ $(document).ready(function() {
 	$("#save-button").click(function(e) {
 		e.preventDefault();
 		$.post("/datastore/save", {
-			sheet: JSON.stringify(ringGraph),
+			graph: JSON.stringify(ringGraph),
 			weave: weave.name,
 			units: units,
 			edgeRings: JSON.stringify(Array.from(edgeRings, function(ring) {return ring.nodeID;})),
-			colorCounts: JSON.stringify(Ring.colorCounts),
             key: key ? key : ""
 		}, function(data) {
 			console.log(data);

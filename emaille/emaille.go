@@ -1,6 +1,8 @@
 package emaille
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,11 +18,11 @@ import (
 )
 
 type Sheet struct {
-	Data        string `datastore:",noindex"`
+	Data      []byte `datastore:",noindex"`
+	Graph     string `datastore:"-,noindex"`
 	Author      string
 	Units       string   `datastore:",noindex"`
 	EdgeRings   []string `datastore:",noindex"`
-	ColorCounts string   `datastore:",noindex"`
 	Weave       string
 	Created     time.Time
 	Updated     time.Time
@@ -59,33 +61,40 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 
 	var edgeRings []string
 	json.Unmarshal([]byte(req.FormValue("edgeRings")), &edgeRings)
+	
+	buffer := new(bytes.Buffer)
+	gz := gzip.NewWriter(buffer)
+
+	if _, err := gz.Write([]byte(req.FormValue("graph"))); err != nil {
+		log.Errorf(ctxt, err.Error())
+	}
+	defer gz.Close()
 
 	keyString := req.FormValue("key")
-	log.Debugf(ctxt, keyString)
+//	log.Debugf(ctxt, keyString)
 
 	// Existing sheet, attempt to locate and update
 	if keyString != "" {
         log.Debugf(ctxt, "Updating sheet")
 		var err error
 		key, sheet, err = loadSheetFromDB(ctxt, fromBase62(keyString))
-		if err == nil {
-			sheet.Data = req.FormValue("sheet")
+		if err != nil {
+			//log.Errorf(ctxt, "Error updating sheet: " + err.Error())
+		} else {
+			sheet.Data = buffer.Bytes()
 			sheet.Units = req.FormValue("units")
 			sheet.EdgeRings = edgeRings
 			sheet.Updated = time.Now()
             log.Debugf(ctxt, "Updated?: %v", sheet.Updated)
-		} else {
-			//log.Errorf(ctxt, "Error updating sheet: " + err.Error())
-		}
+		} 
 		//log.Debugf(ctxt, "Sheet updated: " + sheet.String())
 	} else {
 		key = datastore.NewIncompleteKey(ctxt, "Sheet", nil)
 		sheet = &Sheet{
-			Data:        req.FormValue("sheet"),
+    		Data:      buffer.Bytes(),
 			Units:       req.FormValue("units"),
 			Weave:       req.FormValue("weave"),
 			EdgeRings:   edgeRings,
-			ColorCounts: req.FormValue("colorCounts"),
 			Created:     time.Now(),
 			Updated:     time.Now(),
 		}
@@ -95,8 +104,8 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-    log.Debugf(ctxt, "Now: %v", time.Now())
-	log.Debugf(ctxt, "Saving sheet: %v", sheet.Updated)
+    //log.Debugf(ctxt, "Now: %v", time.Now())
+	//log.Debugf(ctxt, "Saving sheet: %v", sheet.Updated)
 	key, err := datastore.Put(ctxt, key, sheet)
 
 	if err != nil {
@@ -124,6 +133,20 @@ func loadSheet(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	buffer := new(bytes.Buffer)
+	gz, err := gzip.NewReader(bytes.NewReader(sheet.Data))
+	if err != nil {
+		log.Errorf(ctxt, "107: "+err.Error())
+	}
+
+	if _, err := buffer.ReadFrom(gz); err != nil {
+		log.Errorf(ctxt, "111: "+err.Error())
+	}
+	defer gz.Close()
+
+	sheet.Data = make([]byte, 0)
+	sheet.Graph = buffer.String()
+
 	json, err := json.Marshal(sheet)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
@@ -136,26 +159,6 @@ func loadSheetFromDB(ctxt context.Context, keyValue int64) (*datastore.Key, *She
 	key := datastore.NewKey(ctxt, "Sheet", "", keyValue, nil)
 	sheet := new(Sheet)
 	err := datastore.Get(ctxt, key, sheet)
-	//if err != nil {
-	//    log.Debugf(ctxt, sheet.Weave)
-	//	return sheet, err
-	//}
-	//log.Debugf(ctxt, "Loaded sheet from db: " + sheet.String())
-	if key == nil {
-		log.Debugf(ctxt, "nil key")
-	} else {
-		log.Debugf(ctxt, "non-nil key")
-	}
-	if sheet == nil {
-		log.Debugf(ctxt, "nil sheet")
-	} else {
-		log.Debugf(ctxt, "non-nil sheet")
-	}
-	if err == nil {
-		log.Debugf(ctxt, "nil err")
-	} else {
-		log.Debugf(ctxt, "non-nil err")
-	}
 	return key, sheet, err
 }
 
