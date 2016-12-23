@@ -121,7 +121,8 @@ function loadStaticData() {
 			reqs.push($.ajax({
 				url: "/data/wire/" + name,
 				success: function(wire) {
-					wire = JSON.parse(wire); 
+                    if(typeof wire === "string")
+    					wire = JSON.parse(wire); 
 					if(wire.name && wire.sizes) 
 						wireGauges[wire.name] = wire;
 				}
@@ -135,7 +136,7 @@ function loadStaticData() {
 		$.ajax({
 			url: "/data/wire/materials.json",
 			success: function(data) {
-				wireMaterials = JSON.parse(data);
+				wireMaterials = typeof data === "string" ? JSON.parse(data) : data;
 			}
 		});
 	
@@ -148,7 +149,8 @@ function loadStaticData() {
 			reqs.push($.ajax({
 				url: "/data/weave/" + name,
 				success: function(weave) {
-					weave = JSON.parse(weave); 
+                    if(typeof weave === "string")
+    					weave = JSON.parse(weave); 
 					weaves.push({"name": weave.name, "file": name.replace(".json", "")});
 				}
 			}));
@@ -1451,10 +1453,12 @@ $(document).ready(function() {
 			weave: weave.name,
 			units: units,
 			edgeRings: JSON.stringify(Array.from(edgeRings, function(ring) {return ring.nodeID;})),
-			colorCounts: JSON.stringify(Ring.colorCounts)
+			colorCounts: JSON.stringify(Ring.colorCounts),
+            key: key ? key : ""
 		}, function(data) {
 			console.log(data);
-			window.location.pathname += data
+            if(!window.location.pathname.endsWith(data))
+    			window.location.pathname += data
 		});
 	});
 	
