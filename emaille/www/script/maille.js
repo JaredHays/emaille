@@ -6,11 +6,12 @@
  * . Auto quality?
  * . Fixed sheet size option
  * . Measure tool
- * . Touch controls
+ * . Touch controls - two finger move, move not working in general
  * . Weave selection page
+ * Suppress initial weave creation
+ * Tablet CSS
  */
 
-//var API_KEY = "AIzaSyBYapawbMZ9l9EZ_fIuimNjvVIwUWLNXIY";
 var key;
 
 var renderer = null;
@@ -34,8 +35,6 @@ if(!wireMaterials)
 
 var ringRotations;
 var structureRotations;
-
-// var head = null;
 
 var scale = 100;
 var radialSegments = 8;
@@ -94,6 +93,24 @@ function run() {
 	requestAnimationFrame(run);
 
 	renderer.render(scene, camera);
+}
+
+function start() {
+    //var weaveList = $("#weave");
+    //weaveList.change();
+    $("#weave").on("change", function(e) {
+    	if(!$(this).val()) {
+    		e.preventDefault();
+    		return;
+    	}
+    	
+    	$.featherlight.close();
+    	$("div#weave-select").remove();
+    });
+    $.featherlight($("div#weave-select").css("display", "block"), {
+    	closeOnClick: false,
+    	closeOnEsc: false
+    });
 }
 
 /**
@@ -157,11 +174,13 @@ function loadStaticData() {
 		});
 		($.when.apply(this, reqs)).done(function() {
 			var weaveList = $("#weave");
+			weaves.sort(function(a, b) {return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;});
+			weaveList.append("<option value=''>----</option>");
 			for(var i = 0; i < weaves.length; i++) {
 				var weave = weaves[i];
 				weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
 			}
-			weaveList.change();
+			start();
 			
 			// Load sheet data if a key is specified
 			var split = window.location.pathname.split("/").filter(s => s);
@@ -185,7 +204,9 @@ function loadStaticData() {
 					url: envSettings.host + "/data/getweaveslist",
 					dataType: "json",
 					success: function(data) {
-						var weaveList = $("#weave");
+						var weaveList = $("#weave");						
+						data.sort(function(a, b) {return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;});
+						weaveList.append("<option value=''>----</option>");
 						for(var i = 0; i < data.length; i++) {
 							var weave = data[i];
 							weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
@@ -202,18 +223,6 @@ function loadStaticData() {
 }
 
 function loadSheetData(key) {
-	/*
-	type Sheet struct {
-	Data      string `datastore:",noindex"`
-	Author    string
-	Units     string   `datastore:",noindex"`
-	EdgeRings []string `datastore:",noindex"`
-	ColorCounts []string `datastore:",noindex"`
-	Weave     string
-	Created   time.Time
-	Updated   time.Time
-}
-*/
 	// Suppress initial sheet creation
 	geometryUpdates = new Set();
 	
@@ -226,7 +235,6 @@ function loadSheetData(key) {
 			nodeIndex = 0;
 			edgeRings = new Set();
 			geometryUpdates = new Set();
-			// Ring.colorCounts = [];
 			
 			// Delete all children except camera and lights
 			for(var i = scene.children.length - 1; i >= 0; i--) {
@@ -237,26 +245,12 @@ function loadSheetData(key) {
 			
 			data = JSON.parse(data);
 			
-			// console.log(data.ColorCounts);
-			// Ring.colorCounts = JSON.parse(data.ColorCounts);
-			
 			var parsedGraph = JSON.parse(data.Graph);
-			// ringGraph = graphlib.json.read(parsedGraph);
-			// console.log(ringGraph);
 			for(var nodeID in parsedGraph._nodes) {
 				var ring = new Ring(parsedGraph._nodes[nodeID]);
-				// Ring.fromJSON(parsedGraph._nodes[nodeID]);
-				// var ring = parsedGraph._nodes[nodeID];
-				// ring.mesh = new THREE.Mesh(baseGeometries[ring.geometryIndex], baseMaterials[ring.geometryIndex]);
-				// ring.mesh.material = getMaterial(ring.color);
 				ring.mesh.position.copy(parsedGraph._nodes[nodeID].position);
 				ring.mesh.rotation.copy(parsedGraph._nodes[nodeID].rotation);
 				ring.changeColor(parsedGraph._nodes[nodeID].color);
-				// delete ring.color;
-				// delete ring.position;
-				// delete ring.rotation;
-				// ringGraph.setNode(ring.nodeID, ring);
-				// scene.add(ring.mesh);
 			}
 			if(units !== data.Units) {
 				units = data.Units;
@@ -265,9 +259,6 @@ function loadSheetData(key) {
 			for(var nodeID of data.EdgeRings) {
 				edgeRings.add(ringGraph.node(nodeID));
 			}
-			// console.log("nodes: " + ringGraph.nodes());
-			// positionUpdate = true;
-			// nodeIndex = ringGraph.nodeCount();
 		},
 		error: function(data) {
 			console.log(data);
@@ -492,7 +483,6 @@ function linkRings(currentRing, frustum) {
 	}
 	
 	// Search for rings that need to be created
-	// var addedNewRing = false;
 	var addedRings = [];
 	for(ringID in structure) {
 		// Ring missing from current set
@@ -588,8 +578,6 @@ function createRings() {
 	}
 	
 	var currentRing = new Ring({ringID: "base"});
-	
-	// head = currentRing;
 	
 	// Setup for the in-camera test
 	var frustum = new THREE.Frustum();
@@ -896,8 +884,6 @@ function setupWeave() {
 		}
 	}
 	
-	// head = null;
-	
 	ringEnabledFlags = [];
 	// Parse coordinate values in case they are expressions
 	var values = "values" in weave ? weave.values : {};
@@ -1031,8 +1017,8 @@ function print() {
     printWin.document.write(windowContent);
     printWin.document.close();
     printWin.focus();
-    // printWin.print();
-    // printWin.close();
+    printWin.print();
+    printWin.close();
 	
 	// Switch rings back to Phong materials
 	for(var nodeID of ringGraph.nodes()) {
@@ -1082,7 +1068,17 @@ function updateRingStats() {
 		}
 		
 		// Weight
-		var numRings = Object.values(Ring.colorCounts[geometryIndex]).reduce(function(a, b) {return a + b;});
+		var values;
+		if(!Object.values) {
+			values = [];
+			for(var count of Ring.colorCounts[geometryIndex]) {
+				values.push(count);
+			}
+		}
+		else {
+			values = Object.values(Ring.colorCounts[geometryIndex]);
+		}
+		var numRings = values.reduce(function(a, b) {return a + b;});
 		var sampleRing;
 		var nodes = ringGraph.nodes();
 		for(var i = 0; !sampleRing && i < nodes.length; i++) {
@@ -1132,8 +1128,11 @@ $(document).ready(function() {
 		antialias: true
 	});
 	
-	var width = ($(window).width() - $("div#control-panel").width() - $("div#control-panel").css("margin-left").replace("px", "")) * 0.98;
+	var controlPanel = $("div#control-panel");
+	var width = ($(window).width() - controlPanel.width() - controlPanel.css("margin-left").replace("px", "")) * 0.975;
 	var height = width * 9 / 16;
+	
+	controlPanel.css("max-height", $(window).height());
 
 	renderer.setSize(width, height);
 
@@ -1354,7 +1353,12 @@ $(document).ready(function() {
 	});
 	
 	// Weave change: basically recreate the entire thing
-	$(document).on("change", "#weave", function() {
+	$(document).on("change", "#weave", function(e) {
+		if(!$(this).val()) {
+			e.preventDefault();
+			return;
+		}
+		
 		$.ajax({
 			url: envSettings.useLocalData ? "/data/weave/" + $(this).val() + ".json" : envSettings.host + "/data/getweave?name=" + $(this).val(),
 			dataType: "json",
@@ -1435,7 +1439,6 @@ $(document).ready(function() {
 				// ringGraph.node(nodeID).mesh.material.blending = $(this).prop("checked") ? THREE.NormalBlending : THREE.CustomBlending;
 				ringGraph.node(nodeID).mesh.material.transparent = !checked;
 				ringGraph.node(nodeID).mesh.material.opacity = checked ? 1 : 0.5;
-				// ringGraph.node(nodeID).mesh.material.needsUpdate = true;
 			}
 		}
 		$(this).next("label").removeClass(checked ? "fa-lock" : "fa-unlock").addClass(checked ? "fa-unlock" : "fa-lock");

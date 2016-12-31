@@ -5,11 +5,22 @@ canvas {
 	float: left;
 }
 
+div#weave-select {
+    display: none;
+}
+
+div#weave-select h4 {
+	font-size: 1.5rem;
+	font-weight: bold;
+	font-variant: small-caps;
+}
+
 div#control-panel {
 	float: left;
 	margin-left: 5px;
 	margin-top: -5px;
 	width: 30%;
+	overflow-y: scroll;
 }
 
 div#control-panel *:not(div):not(h4) {
