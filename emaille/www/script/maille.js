@@ -10,8 +10,9 @@
  * Suppress initial weave creation
  * Canvas renderer?
  * Hide scroll bar on control panel, up/down arrows on slider bounds
- * Rotate sheet (camera) 90 deg (save rotation?)
+ * Rotate sheet (camera) 90(?) deg (save rotation?)
  * Position updating broken on Japanese weaves
+ * Alpha getting changed with brush/undo when some rings are on and others off
  */
 
 var key;
@@ -1325,6 +1326,11 @@ $(document).ready(function() {
 		if(!(tool instanceof Move)) 
 			tool = new Move();
 	});
+		
+	$("#rotate-button").click(function() {
+		if(!(tool instanceof Rotate)) 
+			tool = new Rotate();
+	});
 	
 	$("#cut-button").click(function() {
 		if(!(tool instanceof Cut)) 
@@ -1370,6 +1376,7 @@ $(document).ready(function() {
 			baseMaterials[ringDiv.data("geometry")].specular.setStyle($(this).val());
 	});
 	
+	// TODO: move this to start
 	// Weave change: basically recreate the entire thing
 	$(document).on("change", "#weave", function(e) {
 		if(!$(this).val()) {
