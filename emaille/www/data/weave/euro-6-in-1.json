@@ -1,8 +1,8 @@
 {
-	"name": "European 4-in-1",
+	"name": "European 6-in-1",
 	"geometries": [
 		{
-			"minAR": 2.9
+			"minAR": 3.5
 		}
 	],
 	"rings": [
@@ -17,9 +17,11 @@
 		}
 	],
 	"values": {
-		"fullOffset": 1.1,
-		"leftOffset": -0.7,
-		"rightOffset": 0.4
+		"fullOffset": 0.9,
+		"leftOffset": -1.0,
+		"centerOffset": -0.1,
+		"rightOffset": 0.8,
+		"yOffset": 1.1
 	},
 	"structure": {
 		"base": {
@@ -28,8 +30,10 @@
 			"pos": {"x": 0, "y": 0},
 			"links": [
 				"top-left",
+				"top-center",
 				"top-right",
 				"bottom-right",
+				"bottom-center",
 				"bottom-left",
 				"left",
 				"right",
@@ -39,26 +43,36 @@
 		},
 		"top-left": {
 			"ring": 1,
-			"pos": {"x": "leftOffset", "y": "fullOffset"}
+			"pos": {"x": "leftOffset", "y": "yOffset"}
+		},
+		"top-center": {
+			"ring": 1,
+			"pos": {"x": "centerOffset", "y": "yOffset"}
 		},
 		"top-right": {
 			"ring": 1,
-			"pos": {"x": "rightOffset", "y": "fullOffset"}
+			"pos": {"x": "rightOffset", "y": "yOffset"}
 		},
 		"bottom-right": {
 			"ring": 1,
-			"pos": {"x": "rightOffset", "y": "-fullOffset"}
+			"pos": {"x": "rightOffset", "y": "-yOffset"}
+		},
+		"bottom-center": {
+			"ring": 1,
+			"pos": {"x": "centerOffset", "y": "-yOffset"}
 		},
 		"bottom-left": {
 			"ring": 1,
-			"pos": {"x": "leftOffset", "y": "-fullOffset"}
+			"pos": {"x": "leftOffset", "y": "-yOffset"}
 		},
 		"left": {
 			"ring": 0,
 			"pos": {"x": "-fullOffset", "y": 0},
 			"links": [
-				{"id": "top-left", "as": "top-right"},
-				{"id": "bottom-left", "as": "bottom-right"},
+				{"id": "top-left", "as": "top-center"},
+				{"id": "top-center", "as": "top-right"},
+				{"id": "bottom-left", "as": "bottom-center"},
+				{"id": "bottom-center", "as": "bottom-right"},
 				{"id": "base", "as": "right"}
 			]
 		},
@@ -66,25 +80,29 @@
 			"ring": 0,
 			"pos": {"x": "fullOffset", "y": 0},
 			"links": [
-				{"id": "top-right", "as": "top-left"},
-				{"id": "bottom-right", "as": "bottom-left"},
+				{"id": "top-right", "as": "top-center"},
+				{"id": "top-center", "as": "top-left"},
+				{"id": "bottom-right", "as": "bottom-center"},
+				{"id": "bottom-center", "as": "bottom-left"},
 				{"id": "base", "as": "left"}
 			]
 		},
 		"top": {
 			"ring": 0,
-			"pos": {"x": 0, "y": "fullOffset * 2"},
+			"pos": {"x": 0, "y": "yOffset * 2"},
 			"links": [
 				{"id": "top-right", "as": "bottom-right"},
+				{"id": "top-center", "as": "bottom-center"},
 				{"id": "top-left", "as": "bottom-left"},
 				{"id": "base", "as": "bottom"}
 			]
 		},
 		"bottom": {
 			"ring": 0,
-			"pos": {"x": 0, "y": "-fullOffset * 2"},
+			"pos": {"x": 0, "y": "-yOffset * 2"},
 			"links": [
 				{"id": "bottom-left", "as": "top-left"},
+				{"id": "bottom-center", "as": "top-center"},
 				{"id": "bottom-right", "as": "top-right"},
 				{"id": "base", "as": "top"}
 			]
@@ -108,19 +126,29 @@
 			["left", "bottom", "right"]
 		],
 		"top-left": [
-			["left", "top-right"],
+			["left", "top-center"],
 			["top", "bottom-left"]
 		],
+		"top-center": [
+			["left", "top-right"],
+			["top", "bottom-center"],
+			["right", "top-left"]
+		],
 		"top-right": [
-			["right", "top-left"],
+			["right", "top-center"],
 			["top", "bottom-right"]
 		],
 		"bottom-right": [
-			["right", "bottom-left"],
+			["right", "bottom-center"],
 			["bottom", "top-right"]
 		],
-		"bottom-left": [
+		"bottom-center": [
 			["left", "bottom-right"],
+			["bottom", "top-center"],
+			["right", "bottom-left"]
+		],
+		"bottom-left": [
+			["left", "bottom-center"],
 			["bottom", "top-left"]
 		]
 	}

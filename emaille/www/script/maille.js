@@ -9,7 +9,9 @@
  * . Touch controls - two finger move, move not working in general
  * . Weave selection page
  * Suppress initial weave creation
- * Tablet CSS
+ * Canvas renderer?
+ * Hide scroll bar on control panel, up/down arrows on slider bounds
+ * Rotate sheet (camera) 90 deg (save rotation?)
  */
 
 var key;
@@ -96,8 +98,6 @@ function run() {
 }
 
 function start() {
-    //var weaveList = $("#weave");
-    //weaveList.change();
     $("#weave").on("change", function(e) {
     	if(!$(this).val()) {
     		e.preventDefault();
@@ -158,7 +158,7 @@ function loadStaticData() {
 		});
 	
 		// Weaves
-		names = ["euro-4-in-1.json", "jap-6-in-1.json"];
+		names = ["euro-4-in-1.json", "jap-6-in-1.json", "euro-6-in-1.json"];
 		var weaves = [];
 		reqs = [];
 		$(names).each(function() {
@@ -1122,6 +1122,11 @@ $(document).ready(function() {
 	canvas = document.getElementById("canvas");
 	
 	var canvasPos = $(canvas).position();
+	
+	if(canvas.getContext("webgl") === null) {
+		$("body").html("<p>WebGL is required to diplay e-maille. Try updating your graphics card drivers.</p>");
+		return;
+	}
 
 	renderer = new THREE.WebGLRenderer({
 		canvas: canvas,
@@ -1155,7 +1160,7 @@ $(document).ready(function() {
 	scene.add(light);
 	
 	window.onresize = function(e) {
-		var width = ($(window).width() - $("div#control-panel").width() - $("div#control-panel").css("margin-left").replace("px", "")) * 0.98;
+		var width = ($(window).width() - $("div#control-panel").width() - $("div#control-panel").css("margin-left").replace("px", "")) * 0.975;
 		var height = width * 9 / 16;
 
 		renderer.setSize(width, height);
@@ -1175,6 +1180,7 @@ $(document).ready(function() {
 			executeCommand(command);
 		}
 	};
+	//canvas.ontouchstart = canvas.onmousedown;
 	canvas.onmouseup = function(e) {
 		e.preventDefault();
 		mouse.down = false;
@@ -1183,6 +1189,7 @@ $(document).ready(function() {
 			executeCommand(command);
 		}
 	};
+	//canvas.ontouchend = canvas.onmouseup;
 	canvas.onmousemove = function(e) {
 		e.preventDefault();
 		mouse.pos.x = ((e.pageX - canvasPos.left) / canvas.width) * 2 - 1;
@@ -1191,7 +1198,8 @@ $(document).ready(function() {
 		if(command) {
 			executeCommand(command);
 		}
-	};	
+	};
+	//canvas.ontouchmove = canvas.onmousemove;
 	canvas.onmouseleave = (function() {
 		mouse.down = false;
 		tool.onMouseUp();

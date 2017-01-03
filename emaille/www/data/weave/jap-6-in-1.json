@@ -22,13 +22,11 @@
 		{
 			"geometry": 0,
 			"rotation": 0,
-			"links": 6,
 			"base": true
 		},
 		{
 			"geometry": 1,
-			"rotation": 90,
-			"links": 2
+			"rotation": 90
 		}
 	],
 	"values": {
