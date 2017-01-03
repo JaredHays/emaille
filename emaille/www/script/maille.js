@@ -7,11 +7,11 @@
  * . Fixed sheet size option
  * . Measure tool
  * . Touch controls - two finger move, move not working in general
- * . Weave selection page
  * Suppress initial weave creation
  * Canvas renderer?
  * Hide scroll bar on control panel, up/down arrows on slider bounds
  * Rotate sheet (camera) 90 deg (save rotation?)
+ * Position updating broken on Japanese weaves
  */
 
 var key;
@@ -158,7 +158,7 @@ function loadStaticData() {
 		});
 	
 		// Weaves
-		names = ["euro-4-in-1.json", "jap-6-in-1.json", "euro-6-in-1.json"];
+		names = ["euro-4-in-1.json", "jap-6-in-1.json", "euro-6-in-1.json", "jap-12-in-2.json"];
 		var weaves = [];
 		reqs = [];
 		$(names).each(function() {
@@ -885,14 +885,24 @@ function setupWeave() {
 	}
 	
 	ringEnabledFlags = [];
-	// Parse coordinate values in case they are expressions
+	// Parse transform values in case they are expressions
 	var values = "values" in weave ? weave.values : {};
 	for(var ringID in weave.structure) {
-		for(var coord in weave.structure[ringID].pos) {
-			weave.structure[ringID].pos[coord] = Parser.evaluate("" + weave.structure[ringID].pos[coord], values);
+		var structure = weave.structure[ringID];
+		// Add any ring-specific values
+		if("values" in structure) {
+			values = $.extend(values, structure.values);
 		}
-		for(var coord in weave.structure[ringID].rot) {
-			weave.structure[ringID].rot[coord] = Parser.evaluate("" + weave.structure[ringID].rot[coord], values);
+		// Parse any values that are expressions
+		for(var value in values) {
+			if(typeof values[value] === "string")
+				values[value] = Parser.evaluate(values[value], values);
+		}
+		for(var coord in structure.pos) {
+			structure.pos[coord] = Parser.evaluate("" + structure.pos[coord], values);
+		}
+		for(var coord in structure.rot) {
+			structure.rot[coord] = Parser.evaluate("" + structure.rot[coord], values);
 		}
 	}
 	$("div.ring-div").remove();
