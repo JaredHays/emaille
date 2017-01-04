@@ -6,8 +6,14 @@
  * . Auto quality?
  * . Fixed sheet size option
  * . Measure tool
- * . Touch controls
- * . Weave selection page
+ * . Touch controls - two finger move, move not working in general
+ * Suppress initial weave creation
+ * Canvas renderer?
+ * Hide scroll bar on control panel, up/down arrows on slider bounds in FF
+ * Rotate sheet (camera) 90(?) deg (save rotation?)
+ * Position updating broken on Japanese weaves
+ * Alpha getting changed with brush/undo when some rings are on and others off
+ * Unsaved changes warning on page leave
  */
 
 var key;
@@ -94,6 +100,32 @@ function run() {
 	renderer.render(scene, camera);
 }
 
+function start() {
+    $("#weave").on("change", function(e) {
+    	if(!$(this).val()) {
+    		e.preventDefault();
+    		return;
+    	}
+    	
+		$("div#weave-select").html("Loading weave...");
+    	
+    	$.ajax({
+			url: envSettings.useLocalData ? "/data/weave/" + $(this).val() + ".json" : envSettings.host + "/data/getweave?name=" + $(this).val(),
+			dataType: "json",
+			success: function(data) {
+				$.featherlight.close();
+				$("div#weave-select").remove();
+				weave = data;
+				setupWeave();
+			}
+		});
+    });
+    $.featherlight($("div#weave-select").css("display", "block"), {
+    	closeOnClick: false,
+    	closeOnEsc: false
+    });
+}
+
 /**
  * Raycast from the cursor to fetch the clicked ring.
  * Raycast results are cached, so this is surprisingly not slow.
@@ -119,7 +151,8 @@ function loadStaticData() {
 			reqs.push($.ajax({
 				url: "/data/wire/" + name,
 				success: function(wire) {
-					wire = JSON.parse(wire); 
+                    if(typeof wire === "string")
+    					wire = JSON.parse(wire); 
 					if(wire.name && wire.sizes) 
 						wireGauges[wire.name] = wire;
 				}
@@ -133,12 +166,12 @@ function loadStaticData() {
 		$.ajax({
 			url: "/data/wire/materials.json",
 			success: function(data) {
-				wireMaterials = JSON.parse(data);
+				wireMaterials = typeof data === "string" ? JSON.parse(data) : data;
 			}
 		});
 	
 		// Weaves
-		names = ["euro-4-in-1.json", "jap-6-in-1.json"];
+		names = ["euro-4-in-1.json", "jap-6-in-1.json", "euro-6-in-1.json", "jap-12-in-2.json", "half-per-4-in-1.json"];
 		var weaves = [];
 		reqs = [];
 		$(names).each(function() {
@@ -146,18 +179,21 @@ function loadStaticData() {
 			reqs.push($.ajax({
 				url: "/data/weave/" + name,
 				success: function(weave) {
-					weave = JSON.parse(weave); 
+                    if(typeof weave === "string")
+    					weave = JSON.parse(weave); 
 					weaves.push({"name": weave.name, "file": name.replace(".json", "")});
 				}
 			}));
 		});
 		($.when.apply(this, reqs)).done(function() {
 			var weaveList = $("#weave");
+			weaves.sort(function(a, b) {return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;});
+			weaveList.append("<option value=''>----</option>");
 			for(var i = 0; i < weaves.length; i++) {
 				var weave = weaves[i];
 				weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
 			}
-			weaveList.change();
+			start();
 			
 			// Load sheet data if a key is specified
 			var split = window.location.pathname.split("/").filter(s => s);
@@ -181,7 +217,9 @@ function loadStaticData() {
 					url: envSettings.host + "/data/getweaveslist",
 					dataType: "json",
 					success: function(data) {
-						var weaveList = $("#weave");
+						var weaveList = $("#weave");						
+						data.sort(function(a, b) {return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;});
+						weaveList.append("<option value=''>----</option>");
 						for(var i = 0; i < data.length; i++) {
 							var weave = data[i];
 							weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
@@ -198,18 +236,6 @@ function loadStaticData() {
 }
 
 function loadSheetData(key) {
-	/*
-	type Sheet struct {
-	Data      string `datastore:",noindex"`
-	Author    string
-	Units     string   `datastore:",noindex"`
-	EdgeRings []string `datastore:",noindex"`
-	ColorCounts []string `datastore:",noindex"`
-	Weave     string
-	Created   time.Time
-	Updated   time.Time
-}
-*/
 	// Suppress initial sheet creation
 	geometryUpdates = new Set();
 	
@@ -222,7 +248,6 @@ function loadSheetData(key) {
 			nodeIndex = 0;
 			edgeRings = new Set();
 			geometryUpdates = new Set();
-			// Ring.colorCounts = [];
 			
 			// Delete all children except camera and lights
 			for(var i = scene.children.length - 1; i >= 0; i--) {
@@ -233,26 +258,12 @@ function loadSheetData(key) {
 			
 			data = JSON.parse(data);
 			
-			// console.log(data.ColorCounts);
-			// Ring.colorCounts = JSON.parse(data.ColorCounts);
-			
 			var parsedGraph = JSON.parse(data.Graph);
-			// ringGraph = graphlib.json.read(parsedGraph);
-			// console.log(ringGraph);
 			for(var nodeID in parsedGraph._nodes) {
 				var ring = new Ring(parsedGraph._nodes[nodeID]);
-				// Ring.fromJSON(parsedGraph._nodes[nodeID]);
-				// var ring = parsedGraph._nodes[nodeID];
-				// ring.mesh = new THREE.Mesh(baseGeometries[ring.geometryIndex], baseMaterials[ring.geometryIndex]);
-				// ring.mesh.material = getMaterial(ring.color);
 				ring.mesh.position.copy(parsedGraph._nodes[nodeID].position);
 				ring.mesh.rotation.copy(parsedGraph._nodes[nodeID].rotation);
 				ring.changeColor(parsedGraph._nodes[nodeID].color);
-				// delete ring.color;
-				// delete ring.position;
-				// delete ring.rotation;
-				// ringGraph.setNode(ring.nodeID, ring);
-				// scene.add(ring.mesh);
 			}
 			if(units !== data.Units) {
 				units = data.Units;
@@ -261,9 +272,6 @@ function loadSheetData(key) {
 			for(var nodeID of data.EdgeRings) {
 				edgeRings.add(ringGraph.node(nodeID));
 			}
-			// console.log("nodes: " + ringGraph.nodes());
-			// positionUpdate = true;
-			// nodeIndex = ringGraph.nodeCount();
 		},
 		error: function(data) {
 			console.log(data);
@@ -488,7 +496,6 @@ function linkRings(currentRing, frustum) {
 	}
 	
 	// Search for rings that need to be created
-	// var addedNewRing = false;
 	var addedRings = [];
 	for(ringID in structure) {
 		// Ring missing from current set
@@ -584,8 +591,6 @@ function createRings() {
 	}
 	
 	var currentRing = new Ring({ringID: "base"});
-	
-	// head = currentRing;
 	
 	// Setup for the in-camera test
 	var frustum = new THREE.Frustum();
@@ -892,17 +897,25 @@ function setupWeave() {
 		}
 	}
 	
-	// head = null;
-	
 	ringEnabledFlags = [];
-	// Parse coordinate values in case they are expressions
+	// Parse transform values in case they are expressions
 	var values = "values" in weave ? weave.values : {};
 	for(var ringID in weave.structure) {
-		for(var coord in weave.structure[ringID].pos) {
-			weave.structure[ringID].pos[coord] = Parser.evaluate("" + weave.structure[ringID].pos[coord], values);
+		var structure = weave.structure[ringID];
+		// Add any ring-specific values
+		if("values" in structure) {
+			values = $.extend(values, structure.values);
 		}
-		for(var coord in weave.structure[ringID].rot) {
-			weave.structure[ringID].rot[coord] = Parser.evaluate("" + weave.structure[ringID].rot[coord], values);
+		// Parse any values that are expressions
+		for(var value in values) {
+			if(typeof values[value] === "string")
+				values[value] = Parser.evaluate(values[value], values);
+		}
+		for(var coord in structure.pos) {
+			structure.pos[coord] = Parser.evaluate("" + structure.pos[coord], values);
+		}
+		for(var coord in structure.rot) {
+			structure.rot[coord] = Parser.evaluate("" + structure.rot[coord], values);
 		}
 	}
 	$("div.ring-div").remove();
@@ -1022,13 +1035,18 @@ function print() {
     windowContent += '<img src="' + data + '">';
     windowContent += '</body>';
     windowContent += '</html>';
-    var printWin = window.open('','','width=340,height=260');
-    printWin.document.open();
-    printWin.document.write(windowContent);
-    printWin.document.close();
-    printWin.focus();
-    // printWin.print();
-    // printWin.close();
+    try {
+		var printWin = window.open('','','width=340,height=260');
+		printWin.document.open();
+		printWin.document.write(windowContent);
+		printWin.document.close();
+		printWin.focus();
+		printWin.print();
+		printWin.close();
+	}
+	catch(error) {
+		alert("There was an error printing your sheet: \n" + error);
+	}
 	
 	// Switch rings back to Phong materials
 	for(var nodeID of ringGraph.nodes()) {
@@ -1078,7 +1096,17 @@ function updateRingStats() {
 		}
 		
 		// Weight
-		var numRings = Object.values(Ring.colorCounts[geometryIndex]).reduce(function(a, b) {return a + b;});
+		var values;
+		if(!Object.values) {
+			values = [];
+			for(var count of Ring.colorCounts[geometryIndex]) {
+				values.push(count);
+			}
+		}
+		else {
+			values = Object.values(Ring.colorCounts[geometryIndex]);
+		}
+		var numRings = values.reduce(function(a, b) {return a + b;});
 		var sampleRing;
 		var nodes = ringGraph.nodes();
 		for(var i = 0; !sampleRing && i < nodes.length; i++) {
@@ -1122,14 +1150,22 @@ $(document).ready(function() {
 	canvas = document.getElementById("canvas");
 	
 	var canvasPos = $(canvas).position();
+	
+	if(canvas.getContext("webgl") === null) {
+		$("body").html("<p>WebGL is required to diplay e-maille. Try updating your graphics card drivers.</p>");
+		return;
+	}
 
 	renderer = new THREE.WebGLRenderer({
 		canvas: canvas,
 		antialias: true
 	});
 	
-	var width = ($(window).width() - $("div#control-panel").width() - $("div#control-panel").css("margin-left").replace("px", "")) * 0.98;
-	var height = width * 9 / 16;
+	var controlPanel = $("div#control-panel");
+	var width = ($(window).width() - controlPanel.width() - controlPanel.css("margin-left").replace("px", "")) * 0.975;
+	var height = Math.max($(window).height() * 0.9, width * 9 / 16);
+	
+	controlPanel.css("max-height", height);
 
 	renderer.setSize(width, height);
 
@@ -1152,8 +1188,10 @@ $(document).ready(function() {
 	scene.add(light);
 	
 	window.onresize = function(e) {
-		var width = ($(window).width() - $("div#control-panel").width() - $("div#control-panel").css("margin-left").replace("px", "")) * 0.98;
-		var height = width * 9 / 16;
+		var width = ($(window).width() - $("div#control-panel").width() - $("div#control-panel").css("margin-left").replace("px", "")) * 0.975;
+		var height = Math.max($(window).height() * 0.9, width * 9 / 16);
+
+		controlPanel.css("max-height", height);
 
 		renderer.setSize(width, height);
 		camera.left = width / -2;
@@ -1172,6 +1210,7 @@ $(document).ready(function() {
 			executeCommand(command);
 		}
 	};
+	//canvas.ontouchstart = canvas.onmousedown;
 	canvas.onmouseup = function(e) {
 		e.preventDefault();
 		mouse.down = false;
@@ -1180,6 +1219,7 @@ $(document).ready(function() {
 			executeCommand(command);
 		}
 	};
+	//canvas.ontouchend = canvas.onmouseup;
 	canvas.onmousemove = function(e) {
 		e.preventDefault();
 		mouse.pos.x = ((e.pageX - canvasPos.left) / canvas.width) * 2 - 1;
@@ -1188,7 +1228,8 @@ $(document).ready(function() {
 		if(command) {
 			executeCommand(command);
 		}
-	};	
+	};
+	//canvas.ontouchmove = canvas.onmousemove;
 	canvas.onmouseleave = (function() {
 		mouse.down = false;
 		tool.onMouseUp();
@@ -1275,6 +1316,9 @@ $(document).ready(function() {
 			else if(e.key === "a") {
 				$("#add-button").click();
 			}
+			else if(e.key === "r") {
+				$("#rotate-button").click();
+			}
 		}
 	};
 	
@@ -1303,6 +1347,11 @@ $(document).ready(function() {
 	$("#move-button").click(function() {
 		if(!(tool instanceof Move)) 
 			tool = new Move();
+	});
+		
+	$("#rotate-button").click(function() {
+		if(!(tool instanceof Rotate)) 
+			tool = new Rotate();
 	});
 	
 	$("#cut-button").click(function() {
@@ -1347,18 +1396,6 @@ $(document).ready(function() {
 		baseMaterials[ringDiv.data("geometry")].color.setStyle($(this).val());
 		if(baseMaterials[ringDiv.data("geometry")].specular)
 			baseMaterials[ringDiv.data("geometry")].specular.setStyle($(this).val());
-	});
-	
-	// Weave change: basically recreate the entire thing
-	$(document).on("change", "#weave", function() {
-		$.ajax({
-			url: envSettings.useLocalData ? "/data/weave/" + $(this).val() + ".json" : envSettings.host + "/data/getweave?name=" + $(this).val(),
-			dataType: "json",
-			success: function(data) {
-				weave = data;
-				setupWeave();
-			}
-		});
 	});
 	
 	$(document).on("change", ".inner-diameter, .aspect-ratio", function() {
@@ -1431,7 +1468,6 @@ $(document).ready(function() {
 				// ringGraph.node(nodeID).mesh.material.blending = $(this).prop("checked") ? THREE.NormalBlending : THREE.CustomBlending;
 				ringGraph.node(nodeID).mesh.material.transparent = !checked;
 				ringGraph.node(nodeID).mesh.material.opacity = checked ? 1 : 0.5;
-				// ringGraph.node(nodeID).mesh.material.needsUpdate = true;
 			}
 		}
 		$(this).next("label").removeClass(checked ? "fa-lock" : "fa-unlock").addClass(checked ? "fa-unlock" : "fa-lock");
@@ -1448,10 +1484,12 @@ $(document).ready(function() {
 			graph: JSON.stringify(ringGraph),
 			weave: weave.name,
 			units: units,
-			edgeRings: JSON.stringify(Array.from(edgeRings, function(ring) {return ring.nodeID;}))
+			edgeRings: JSON.stringify(Array.from(edgeRings, function(ring) {return ring.nodeID;})),
+            key: key ? key : ""
 		}, function(data) {
 			console.log(data);
-			window.location.pathname += data
+            if(!window.location.pathname.endsWith(data))
+    			window.location.pathname += data
 		});
 	});
 	

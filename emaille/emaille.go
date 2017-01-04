@@ -28,8 +28,15 @@ type Sheet struct {
 	Updated   time.Time
 }
 
+func (sheet *Sheet) String() string {
+	json, _ := json.Marshal(sheet)
+	return string(json)
+}
+
 func init() {
 	http.HandleFunc("/maille/", maille)
+	http.HandleFunc("/contact.html", contactHTML)
+	http.HandleFunc("/contact", contact)
 	http.HandleFunc("/data/getwires", getWires)
 	http.HandleFunc("/datastore/load", loadSheet)
 	http.HandleFunc("/datastore/save", saveSheet)
@@ -37,6 +44,19 @@ func init() {
 
 func maille(resp http.ResponseWriter, req *http.Request) {
 	http.ServeFile(resp, req, "./www/index.html")
+}
+
+// TODO: change to plain file handler
+func contactHTML(resp http.ResponseWriter, req *http.Request) {
+	http.ServeFile(resp, req, "./www/contact.html")
+}
+
+func contact(resp http.ResponseWriter, req *http.Request) {
+	ctxt := appengine.NewContext(req)
+	
+	log.Infof(ctxt, "type: " + req.FormValue("type"))
+	log.Infof(ctxt, req.FormValue("subject"))
+	log.Infof(ctxt, req.FormValue("body"))	
 }
 
 func getWires(resp http.ResponseWriter, req *http.Request) {
@@ -51,6 +71,9 @@ func getWires(resp http.ResponseWriter, req *http.Request) {
 func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	ctxt := appengine.NewContext(req)
 
+	var key *datastore.Key
+	var sheet *Sheet
+
 	var edgeRings []string
 	json.Unmarshal([]byte(req.FormValue("edgeRings")), &edgeRings)
 
@@ -62,23 +85,42 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	}
 	defer gz.Close()
 
-	sheet := &Sheet{
-		Data:      buffer.Bytes(),
-		Units:     req.FormValue("units"),
-		Weave:     req.FormValue("weave"),
-		EdgeRings: edgeRings,
-		Created:   time.Now(),
-		Updated:   time.Now(),
-	}
-	if u := user.Current(ctxt); u != nil {
-		sheet.Author = u.String()
+	keyString := req.FormValue("key")
+
+	// Existing sheet, attempt to locate and update
+	if keyString != "" {
+		log.Debugf(ctxt, "Updating sheet")
+		var err error
+		key, sheet, err = loadSheetFromDB(ctxt, fromBase62(keyString))
+		if err != nil {
+			log.Errorf(ctxt, "Error updating sheet: " + err.Error())
+		} else {
+			sheet.Data = buffer.Bytes()
+			sheet.Units = req.FormValue("units")
+			sheet.EdgeRings = edgeRings
+			sheet.Updated = time.Now()
+			log.Debugf(ctxt, "Updated?: %v", sheet.Updated)
+		}
+	} else {
+		key = datastore.NewIncompleteKey(ctxt, "Sheet", nil)
+		sheet = &Sheet{
+			Data:      buffer.Bytes(),
+			Units:     req.FormValue("units"),
+			Weave:     req.FormValue("weave"),
+			EdgeRings: edgeRings,
+			Created:   time.Now(),
+			Updated:   time.Now(),
+		}
+
+		if u := user.Current(ctxt); u != nil {
+			sheet.Author = u.String()
+		}
 	}
 
-	key, err := datastore.Put(ctxt, datastore.NewIncompleteKey(ctxt, "Sheet", nil), sheet)
+	key, err := datastore.Put(ctxt, key, sheet)
 
 	if err != nil {
-		// resp.Write([]byte(err.Error()))
-		log.Errorf(ctxt, err.Error())
+		log.Errorf(ctxt, "Error saving sheet: "+err.Error())
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -92,9 +134,8 @@ func loadSheet(resp http.ResponseWriter, req *http.Request) {
 
 	log.Debugf(ctxt, strconv.FormatInt(fromBase62(req.FormValue("key")), 10))
 
-	key := datastore.NewKey(ctxt, "Sheet", "", fromBase62(req.FormValue("key")), nil)
-	sheet := new(Sheet)
-	if err := datastore.Get(ctxt, key, sheet); err != nil {
+	_, sheet, err := loadSheetFromDB(ctxt, fromBase62(req.FormValue("key")))
+	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -119,6 +160,13 @@ func loadSheet(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 	resp.Write(json)
+}
+
+func loadSheetFromDB(ctxt context.Context, keyValue int64) (*datastore.Key, *Sheet, error) {
+	key := datastore.NewKey(ctxt, "Sheet", "", keyValue, nil)
+	sheet := new(Sheet)
+	err := datastore.Get(ctxt, key, sheet)
+	return key, sheet, err
 }
 
 func toBase62(num int64) string {

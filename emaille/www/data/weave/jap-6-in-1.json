@@ -22,13 +22,11 @@
 		{
 			"geometry": 0,
 			"rotation": 0,
-			"links": 6,
 			"base": true
 		},
 		{
 			"geometry": 1,
-			"rotation": 90,
-			"links": 2
+			"rotation": 90
 		}
 	],
 	"values": {
@@ -57,36 +55,44 @@
 		},
 		"small-0": {
 			"ring": 1,
-			"pos": {"x": 0, "y": "radius", "z": 0.5}
+			"values": {"deg": 90, "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "deg - 90"}
 		},
 		"small-1": {
 			"ring": 1,
-			"pos": {"x": "radius * cos(30 * PI / 180)", "y": "radius * sin(30 * PI / 180)", "z": 0.5},
-			"rot": {"z": -60}
+			"values": {"deg": 30, "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "deg - 90"}
 		},
 		"small-2": {
 			"ring": 1,
-			"pos": {"x": "radius * cos(-30 * PI / 180)", "y": "radius * sin(-30 * PI / 180)", "z": 0.5},
-			"rot": {"z": 60}
+			"values": {"deg": -30, "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "deg - 90"}
 		},
 		"small-3": {
 			"ring": 1,
-			"pos": {"x": 0, "y": "-radius", "z": 0.5},
-			"rot": {"z": 0}
+			"values": {"deg": -90, "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "deg - 90"}
 		},
 		"small-4": {
 			"ring": 1,
-			"pos": {"x": "radius * cos(-150 * PI / 180)", "y": "radius * sin(-150 * PI / 180)", "z": 0.5},
-			"rot": {"z": -60}
+			"values": {"deg": -150, "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "deg - 90"}
 		},
 		"small-5": {
 			"ring": 1,
-			"pos": {"x": "radius * cos(150 * PI / 180)", "y": "radius * sin(150 * PI / 180)", "z": 0.5},
-			"rot": {"z": -120}
+			"values": {"deg": 150, "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "deg - 90"}
 		},
 		"large-0": {
 			"ring": 0,
-			"pos": {"x": 0, "y": "largeOffset * radius"},
+			"values": {"deg": 90, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
 			"links": [
 				{"id": "small-0", "as": "small-3"},
 				{"id": "base", "as": "large-3"}
@@ -94,8 +100,8 @@
 		},
 		"large-1": {
 			"ring": 0,
-			"pos": {"x": "largeOffset * radius * cos(30 * PI / 180)", "y": "largeOffset * radius * sin(30 * PI / 180)"},
-			"rot": {"z": -30},
+			"values": {"deg": 30, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
 			"links": [
 				{"id": "small-1", "as": "small-4"},
 				{"id": "base", "as": "large-4"}
@@ -103,8 +109,8 @@
 		},
 		"large-2": {
 			"ring": 0,
-			"pos": {"x": "largeOffset * radius * cos(-30 * PI / 180)", "y": "largeOffset * radius * sin(-30 * PI / 180)"},
-			"rot": {"z": 30},
+			"values": {"deg": -30, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
 			"links": [
 				{"id": "small-2", "as": "small-5"},
 				{"id": "base", "as": "large-5"}
@@ -112,8 +118,8 @@
 		},
 		"large-3": {
 			"ring": 0,
-			"pos": {"x": 0, "y": "-largeOffset * radius"},
-			"rot": {"z": 0},
+			"values": {"deg": -90, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
 			"links": [
 				{"id": "small-3", "as": "small-0"},
 				{"id": "base", "as": "large-0"}
@@ -121,8 +127,8 @@
 		},
 		"large-4": {
 			"ring": 0,
-			"pos": {"x": "largeOffset * radius * cos(-150 * PI / 180)", "y": "largeOffset * radius * sin(-150 * PI / 180)"},
-			"rot": {"z": -30},
+			"values": {"deg": -150, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
 			"links": [
 				{"id": "small-4", "as": "small-1"},
 				{"id": "base", "as": "large-1"}
@@ -130,8 +136,8 @@
 		},
 		"large-5": {
 			"ring": 0,
-			"pos": {"x": "largeOffset * radius * cos(150 * PI / 180)", "y": "largeOffset * radius * sin(150 * PI / 180)"},
-			"rot": {"z": 30},
+			"values": {"deg": 150, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
 			"links": [
 				{"id": "small-5", "as": "small-2"},
 				{"id": "base", "as": "large-2"}
