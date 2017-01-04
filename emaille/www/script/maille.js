@@ -9,10 +9,11 @@
  * . Touch controls - two finger move, move not working in general
  * Suppress initial weave creation
  * Canvas renderer?
- * Hide scroll bar on control panel, up/down arrows on slider bounds
+ * Hide scroll bar on control panel, up/down arrows on slider bounds in FF
  * Rotate sheet (camera) 90(?) deg (save rotation?)
  * Position updating broken on Japanese weaves
  * Alpha getting changed with brush/undo when some rings are on and others off
+ * Unsaved changes warning on page leave
  */
 
 var key;
@@ -105,8 +106,18 @@ function start() {
     		return;
     	}
     	
-    	$.featherlight.close();
-    	$("div#weave-select").remove();
+		$("div#weave-select").html("Loading weave...");
+    	
+    	$.ajax({
+			url: envSettings.useLocalData ? "/data/weave/" + $(this).val() + ".json" : envSettings.host + "/data/getweave?name=" + $(this).val(),
+			dataType: "json",
+			success: function(data) {
+				$.featherlight.close();
+				$("div#weave-select").remove();
+				weave = data;
+				setupWeave();
+			}
+		});
     });
     $.featherlight($("div#weave-select").css("display", "block"), {
     	closeOnClick: false,
@@ -159,7 +170,7 @@ function loadStaticData() {
 		});
 	
 		// Weaves
-		names = ["euro-4-in-1.json", "jap-6-in-1.json", "euro-6-in-1.json", "jap-12-in-2.json"];
+		names = ["euro-4-in-1.json", "jap-6-in-1.json", "euro-6-in-1.json", "jap-12-in-2.json", "half-per-4-in-1.json"];
 		var weaves = [];
 		reqs = [];
 		$(names).each(function() {
@@ -1023,13 +1034,18 @@ function print() {
     windowContent += '<img src="' + data + '">';
     windowContent += '</body>';
     windowContent += '</html>';
-    var printWin = window.open('','','width=340,height=260');
-    printWin.document.open();
-    printWin.document.write(windowContent);
-    printWin.document.close();
-    printWin.focus();
-    printWin.print();
-    printWin.close();
+    try {
+		var printWin = window.open('','','width=340,height=260');
+		printWin.document.open();
+		printWin.document.write(windowContent);
+		printWin.document.close();
+		printWin.focus();
+		printWin.print();
+		printWin.close();
+	}
+	catch(error) {
+		alert("There was an error printing your sheet: \n" + error);
+	}
 	
 	// Switch rings back to Phong materials
 	for(var nodeID of ringGraph.nodes()) {
@@ -1146,9 +1162,9 @@ $(document).ready(function() {
 	
 	var controlPanel = $("div#control-panel");
 	var width = ($(window).width() - controlPanel.width() - controlPanel.css("margin-left").replace("px", "")) * 0.975;
-	var height = width * 9 / 16;
+	var height = Math.max($(window).height() * 0.9, width * 9 / 16);
 	
-	controlPanel.css("max-height", $(window).height());
+	controlPanel.css("max-height", height);
 
 	renderer.setSize(width, height);
 
@@ -1172,7 +1188,9 @@ $(document).ready(function() {
 	
 	window.onresize = function(e) {
 		var width = ($(window).width() - $("div#control-panel").width() - $("div#control-panel").css("margin-left").replace("px", "")) * 0.975;
-		var height = width * 9 / 16;
+		var height = Math.max($(window).height() * 0.9, width * 9 / 16);
+
+		controlPanel.css("max-height", height);
 
 		renderer.setSize(width, height);
 		camera.left = width / -2;
@@ -1297,6 +1315,9 @@ $(document).ready(function() {
 			else if(e.key === "a") {
 				$("#add-button").click();
 			}
+			else if(e.key === "r") {
+				$("#rotate-button").click();
+			}
 		}
 	};
 	
@@ -1374,24 +1395,6 @@ $(document).ready(function() {
 		baseMaterials[ringDiv.data("geometry")].color.setStyle($(this).val());
 		if(baseMaterials[ringDiv.data("geometry")].specular)
 			baseMaterials[ringDiv.data("geometry")].specular.setStyle($(this).val());
-	});
-	
-	// TODO: move this to start
-	// Weave change: basically recreate the entire thing
-	$(document).on("change", "#weave", function(e) {
-		if(!$(this).val()) {
-			e.preventDefault();
-			return;
-		}
-		
-		$.ajax({
-			url: envSettings.useLocalData ? "/data/weave/" + $(this).val() + ".json" : envSettings.host + "/data/getweave?name=" + $(this).val(),
-			dataType: "json",
-			success: function(data) {
-				weave = data;
-				setupWeave();
-			}
-		});
 	});
 	
 	$(document).on("change", ".inner-diameter, .aspect-ratio", function() {

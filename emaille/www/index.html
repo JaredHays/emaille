@@ -2,9 +2,9 @@
 
 <html>
 <head>
-<title>e-maille</title>
+<title>e-maille - Chainmaille inlay editor</title>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<link rel="stylesheet" type="text/css" href="/style/index.css" />
+<link rel="stylesheet" type="text/css" href="/style/maille.css" />
 <link rel="stylesheet" type="text/css" href="/style/featherlight.min.css" />
 <script type="text/javascript" src="https://use.fontawesome.com/65e3673d8d.js"></script>
 <script type="text/javascript" src="/script/jquery-2.2.3.min.js"></script>
@@ -30,7 +30,9 @@
 <body>
 <div class="container">
 	<div class="row">
-		<canvas id="canvas" width="1080" height="720" class="ten columns"></canvas>
+		<div id="canvas-div">
+			<canvas id="canvas" width="1080" height="720" class="ten columns"></canvas>
+		</div>
 		
 		<div id="weave-select">	
 			<h4>Choose a weave (cannot be changed)</h4>		
@@ -66,10 +68,10 @@
 				<div id="tool-inner-div">
 					<button id="brush-button" class="tool-button fa fa-paint-brush" aria-label="Brush (B)" title="Brush (B)"></button>
 					<button id="eraser-button" class="tool-button fa fa-eraser" aria-label="Eraser (E)" title="Eraser (E)"></button>
-					<br />		
+					&nbsp;&nbsp;&nbsp;&nbsp;	
 					<button id="move-button" class="tool-button fa fa-arrows" aria-label="Move (M)" title="Move (M)"></button>		
 					<button id="rotate-button" class="tool-button fa fa-camera" aria-label="Rotate (R)" title="Rotate (R)"></button>
-					<br />
+					&nbsp;&nbsp;&nbsp;&nbsp;
 					<button id="cut-button" class="tool-button fa fa-scissors" aria-label="Cut (X)" title="Cut (X)"></button>
 					<button id="add-button" class="tool-button fa fa-plus" aria-label="Add (A)" title="Add (A)"></button>
 				</div>
@@ -81,6 +83,9 @@
 					</div>
 					<div id="move-button-sub-tool-div" class="sub-tool-div">
 						Hold down Alt to toggle the Move tool.
+					</div>
+					<div id="rotate-button-sub-tool-div" class="sub-tool-div">
+						Click the sheet to rotate the camera 30° clockwise.
 					</div>
 					<div id="add-button-sub-tool-div" class="sub-tool-div">
 						Click on a ring to re-add connected rings.
@@ -120,7 +125,8 @@
 	</div>
 	
 	<footer>
-		<div>Icons courtesy of Font Awesome by Dave Gandy - <a href="http://fontawesome.io">http://fontawesome.io</a></div>
+		<div>e-maille version 0.1α - <a href="https://www.github.com/JaredHays/emaille">github</a> - <a href="/contact.html">Contact</a></div>
+		<div>Icons courtesy of <a href="http://fontawesome.io">Font Awesome</a></div>
 	</footer>
 </div>
 </body>

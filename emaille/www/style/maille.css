@@ -5,6 +5,10 @@ canvas {
 	float: left;
 }
 
+div#canvas-div {
+	box-sizing: border-box;
+}
+
 div#weave-select {
     display: none;
 }
@@ -18,9 +22,9 @@ div#weave-select h4 {
 div#control-panel {
 	float: left;
 	margin-left: 5px;
-	margin-top: -5px;
 	width: 30%;
 	overflow-y: scroll;
+	box-sizing: border-box;
 }
 
 div#control-panel *:not(div):not(h4) {

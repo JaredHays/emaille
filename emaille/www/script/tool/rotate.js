@@ -10,13 +10,15 @@ Rotate.prototype = {
 		return {
 			execute: function() {
 				camera.rotation.z += THREE.Math.degToRad(30);
-				camera.updateMatrixWorld();
+				//camera.updateMatrixWorld();
+				//camera.updateProjectionMatrix();
 				expandSheet();
 			},
 			undo: function() {
 				camera.rotation.z -= THREE.Math.degToRad(30);
-				camera.updateMatrixWorld();
-				expandSheet();
+				//camera.updateMatrixWorld();
+				//camera.updateProjectionMatrix();
+				//expandSheet();
 			}
 		}
 	},
