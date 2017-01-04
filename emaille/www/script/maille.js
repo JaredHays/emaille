@@ -10,7 +10,6 @@
  * . Weave selection page
  */
 
-var API_KEY = "AIzaSyBYapawbMZ9l9EZ_fIuimNjvVIwUWLNXIY";
 var key;
 
 var renderer = null;
@@ -34,8 +33,6 @@ if(!wireMaterials)
 
 var ringRotations;
 var structureRotations;
-
-// var head = null;
 
 var scale = 100;
 var radialSegments = 8;
@@ -65,7 +62,8 @@ var commandIndex = 0;
 
 var envSettings = $.extend({
 	logPerformance: false,
-	host: "https://e-maille.appspot.com/"
+	host: "https://e-maille.appspot.com/",
+	// gcs: "https://www.googleapis.com/storage/v1/b/e-maille.appspot.com/"
 }, localEnvSettings ? localEnvSettings : {});
 
 Math.clamp = function(num, min, max) {
