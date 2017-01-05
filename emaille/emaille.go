@@ -34,29 +34,28 @@ func (sheet *Sheet) String() string {
 }
 
 func init() {
-	http.HandleFunc("/maille/", maille)
-	http.HandleFunc("/contact.html", contactHTML)
+	http.HandleFunc("/maille/", func(resp http.ResponseWriter, req *http.Request) {
+		ctxt := appengine.NewContext(req)
+		if u := user.Current(ctxt); u == nil {
+			log.Infof(ctxt, "nil user")
+		}
+		http.ServeFile(resp, req, "./www/index.html")
+	})
+	http.HandleFunc("/contact.html", func(resp http.ResponseWriter, req *http.Request) {
+		http.ServeFile(resp, req, "./www/contact.html")
+	})
 	http.HandleFunc("/contact", contact)
 	http.HandleFunc("/data/getwires", getWires)
 	http.HandleFunc("/datastore/load", loadSheet)
 	http.HandleFunc("/datastore/save", saveSheet)
 }
 
-func maille(resp http.ResponseWriter, req *http.Request) {
-	http.ServeFile(resp, req, "./www/index.html")
-}
-
-// TODO: change to plain file handler
-func contactHTML(resp http.ResponseWriter, req *http.Request) {
-	http.ServeFile(resp, req, "./www/contact.html")
-}
-
 func contact(resp http.ResponseWriter, req *http.Request) {
 	ctxt := appengine.NewContext(req)
-	
-	log.Infof(ctxt, "type: " + req.FormValue("type"))
+
+	log.Infof(ctxt, "type: "+req.FormValue("type"))
 	log.Infof(ctxt, req.FormValue("subject"))
-	log.Infof(ctxt, req.FormValue("body"))	
+	log.Infof(ctxt, req.FormValue("body"))
 }
 
 func getWires(resp http.ResponseWriter, req *http.Request) {
@@ -93,7 +92,7 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 		var err error
 		key, sheet, err = loadSheetFromDB(ctxt, fromBase62(keyString))
 		if err != nil {
-			log.Errorf(ctxt, "Error updating sheet: " + err.Error())
+			log.Errorf(ctxt, "Error updating sheet: "+err.Error())
 		} else {
 			sheet.Data = buffer.Bytes()
 			sheet.Units = req.FormValue("units")

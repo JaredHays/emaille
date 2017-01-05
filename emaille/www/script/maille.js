@@ -110,7 +110,7 @@ function start() {
 		$("div#weave-select").html("Loading weave...");
     	
     	$.ajax({
-			url: envSettings.useLocalData ? "/data/weave/" + $(this).val() + ".json" : envSettings.host + "/data/getweave?name=" + $(this).val(),
+			url: envSettings.useLocalData ? "/data/weave/" + $(this).val() : envSettings.host + "/data/getweave?name=" + $(this).val(),
 			dataType: "json",
 			success: function(data) {
 				$.featherlight.close();
@@ -163,28 +163,20 @@ function loadStaticData() {
 		});
 		
 		// Metals/materials
-		$.ajax({
+		reqs.push($.ajax({
 			url: "/data/wire/materials.json",
 			success: function(data) {
 				wireMaterials = typeof data === "string" ? JSON.parse(data) : data;
 			}
-		});
+		}));
 	
 		// Weaves
-		names = ["euro-4-in-1.json", "jap-6-in-1.json", "euro-6-in-1.json", "jap-12-in-2.json", "half-per-4-in-1.json"];
-		var weaves = [];
-		reqs = [];
-		$(names).each(function() {
-			var name = this;
-			reqs.push($.ajax({
-				url: "/data/weave/" + name,
-				success: function(weave) {
-                    if(typeof weave === "string")
-    					weave = JSON.parse(weave); 
-					weaves.push({"name": weave.name, "file": name.replace(".json", "")});
-				}
-			}));
-		});
+		reqs.push($.ajax({
+			url: "/data/weave/weaves.json",
+			success: function(data) {
+				weaves = typeof data === "string" ? JSON.parse(data) : data;
+			}
+		}));
 		($.when.apply(this, reqs)).done(function() {
 			var weaveList = $("#weave");
 			weaves.sort(function(a, b) {return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;});
