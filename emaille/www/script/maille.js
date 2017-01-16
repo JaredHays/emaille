@@ -294,7 +294,6 @@ function loadSheetData(key) {
 						var ring = new Ring(node);
 						ring.mesh.position.copy(node.position);
 						ring.mesh.rotation.copy(node.rotation);
-						console.log(node.color);
 						ring.changeColor(node.color);
 					}
 					if(units !== data.units) {

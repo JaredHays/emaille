@@ -22,13 +22,13 @@ import (
 var destAcct = "jared.hays@gmail.com"
 
 type Sheet struct {
-	RingData      []byte    `datastore:",noindex" json:"-"`
+	RingData  []byte    `datastore:",noindex" json:"-"`
 	Rings     string    `datastore:"-,noindex" json:"rings"`
 	Author    string    `json:"author"`
 	AuthorID  string    `json:"authorID"`
 	Units     string    `datastore:",noindex" json:"units"`
-	EdgeData  []byte	`datastore:",noindex" json:"-"`
-	EdgeRings string  `datastore:"-,noindex" json:"edgeRings"`
+	EdgeData  []byte    `datastore:",noindex" json:"-"`
+	EdgeRings string    `datastore:"-,noindex" json:"edgeRings"`
 	Weave     string    `json:"weave"`
 	Created   time.Time `json:"created"`
 	Updated   time.Time `json:"updated"`
@@ -36,14 +36,14 @@ type Sheet struct {
 
 func (orig *Sheet) Clone() *Sheet {
 	var sheet = &Sheet{
-		RingData:      orig.RingData,
-		Units:     orig.Units,
-		Weave:     orig.Weave,
+		RingData: orig.RingData,
+		Units:    orig.Units,
+		Weave:    orig.Weave,
 		EdgeData: orig.EdgeData,
-		Created:   orig.Created,
-		Updated:   orig.Updated,
-		Author:    orig.Author,
-		AuthorID:  orig.AuthorID,
+		Created:  orig.Created,
+		Updated:  orig.Updated,
+		Author:   orig.Author,
+		AuthorID: orig.AuthorID,
 	}
 	return sheet
 }
@@ -53,6 +53,7 @@ func (sheet *Sheet) String() string {
 	return string(json)
 }
 
+// Compress Rings and EdgeRings to RingData and EdgeData
 func (sheet *Sheet) zipGraph() error {
 	buffer := new(bytes.Buffer)
 	gz := gzip.NewWriter(buffer)
@@ -63,7 +64,7 @@ func (sheet *Sheet) zipGraph() error {
 	gz.Close()
 
 	sheet.RingData = buffer.Bytes()
-	
+
 	buffer = new(bytes.Buffer)
 	gz = gzip.NewWriter(buffer)
 
@@ -73,27 +74,24 @@ func (sheet *Sheet) zipGraph() error {
 	gz.Close()
 
 	sheet.EdgeData = buffer.Bytes()
-	
-	// gz.Close()
-	
+
 	return nil
 }
 
-func (sheet *Sheet) unzipGraph(ctxt context.Context) error {
+// Decompress RingData and EdgeData into Rings and EdgeRings
+func (sheet *Sheet) unzipGraph() error {
 	buffer := new(bytes.Buffer)
 	gz, err := gzip.NewReader(bytes.NewReader(sheet.RingData))
 	if err != nil {
 		return err
 	}
 
-		log.Debugf(ctxt, "Rings length: %v", len(sheet.RingData))
 	if _, err := buffer.ReadFrom(gz); err != nil {
-		log.Errorf(ctxt, "Error unzipping rings: "+err.Error())
 		return err
 	}
 
 	sheet.Rings = buffer.String()
-	
+
 	buffer = new(bytes.Buffer)
 	gz, err = gzip.NewReader(bytes.NewReader(sheet.EdgeData))
 	if err != nil {
@@ -101,14 +99,13 @@ func (sheet *Sheet) unzipGraph(ctxt context.Context) error {
 	}
 
 	if _, err := buffer.ReadFrom(gz); err != nil {
-		log.Errorf(ctxt, "Error unzipping edge: "+err.Error())
 		return err
 	}
 
 	sheet.EdgeRings = buffer.String()
-	
+
 	gz.Close()
-	
+
 	return nil
 }
 
@@ -160,6 +157,12 @@ func getWires(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
+/**
+ * Save a sheet to the datastore. Behavior differs depending on user credentials and current db status of sheet.
+ * - No preexisting sheet: Create new sheet owned by current user
+ * - Preexisting sheet, same user: Update existing sheet
+ * - Preexisting sheet, different user: Clone existing sheet to new sheet owned by current user
+ */
 func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	ctxt := appengine.NewContext(req)
 
@@ -190,23 +193,6 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	var key *datastore.Key
 	var sheet *Sheet
 
-	// var edgeRings []string
-	// err = json.Unmarshal([]byte(req.PostFormValue("edgeRings")), &edgeRings)
-	// if err != nil {
-		// log.Errorf(ctxt, "Error parsing sheet data: "+err.Error())
-		// http.Error(resp, err.Error(), http.StatusInternalServerError)
-		// return
-	// }
-
-	// buffer := new(bytes.Buffer)
-	// gz := gzip.NewWriter(buffer)
-
-	// if _, err := gz.Write([]byte(req.FormValue("graph"))); err != nil {
-	// log.Errorf(ctxt, "Error zipping graph: "+err.Error())
-	// http.Error(resp, err.Error(), http.StatusInternalServerError)
-	// }
-	// gz.Close()
-
 	keyString := req.PostFormValue("key")
 
 	// Existing sheet, attempt to locate and update
@@ -232,21 +218,18 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	sheet.Rings = req.PostFormValue("rings")
-	// sheet.Data = buffer.Bytes()
 	sheet.Units = req.PostFormValue("units")
 	sheet.Weave = req.PostFormValue("weave")
 	sheet.EdgeRings = req.PostFormValue("edgeRings")
 	sheet.Updated = time.Now()
 	sheet.Author = email
 	sheet.AuthorID = id
-
+	
 	if err := sheet.zipGraph(); err != nil {
 		log.Errorf(ctxt, "Error zipping graph: "+err.Error())
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 	}
-
-	// log.Debugf(ctxt, "Length saving: %d", len(req.FormValue("graph")))
-
+	
 	key, err = datastore.Put(ctxt, key, sheet)
 
 	if err != nil {
@@ -258,6 +241,9 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte(toBase62(key.IntID())))
 }
 
+/**
+ * Load a sheet from the datastore. No credentials required.
+ */
 func loadSheet(resp http.ResponseWriter, req *http.Request) {
 	ctxt := appengine.NewContext(req)
 
@@ -269,26 +255,10 @@ func loadSheet(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// buffer := new(bytes.Buffer)
-	// gz, err := gzip.NewReader(bytes.NewReader(sheet.Data))
-	// if err != nil {
-	// log.Errorf(ctxt, "Error creating zipper: "+err.Error())
-	// }
-
-	// if _, err := buffer.ReadFrom(gz); err != nil {
-	// log.Errorf(ctxt, "Error reading from zipper: "+err.Error())
-	// }
-	// gz.Close()
-
-	if err := sheet.unzipGraph(ctxt); err != nil {
+	if err := sheet.unzipGraph(); err != nil {
 		log.Errorf(ctxt, "Error unzipping graph: "+err.Error())
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 	}
-
-	// log.Debugf(ctxt, "Data length loading: %d", len(sheet.Data))
-	// sheet.Data = make([]byte, 0)
-	// sheet.Graph = buffer.String()
-	// log.Debugf(ctxt, "Graph length loading: %d", len(sheet.Graph))
 
 	json, err := json.Marshal(sheet)
 	if err != nil {
