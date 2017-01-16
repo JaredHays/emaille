@@ -290,18 +290,18 @@ function loadSheetData(key) {
 					setupWeave();
 					createRings();
 					
-					var parsedGraph = JSON.parse(data.graph);
-					for(var node of parsedGraph) {
+					for(var node of JSON.parse(data.rings)) {
 						var ring = new Ring(node);
 						ring.mesh.position.copy(node.position);
 						ring.mesh.rotation.copy(node.rotation);
+						console.log(node.color);
 						ring.changeColor(node.color);
 					}
 					if(units !== data.units) {
 						units = data.units;
 						changeUnits();
 					}
-					for(var nodeID of data.edgeRings) {
+					for(var nodeID of JSON.parse(data.edgeRings)) {
 						edgeRings.add(ringGraph.node(nodeID));
 					}
 					
@@ -372,7 +372,8 @@ function Ring(params) {
 		
 		for(var prop in this) {
 			// Don't bother serializing the mesh since it can't be deserialized
-			if(prop === "mesh")
+			// Also skip updated because it's pointless to serialize
+			if(prop === "mesh" || prop === "updated")
 				continue;
 			else if(typeof this[prop] === "string")
 				json[prop] = this[prop];
@@ -1527,7 +1528,7 @@ $(document).ready(function() {
 	$("#save-button").click(function(e) {
 		e.preventDefault();
 		$.post("/datastore/save", {
-			graph: JSON.stringify(ringGraph.nodes().map(function(id){return ringGraph.node(id);})),
+			rings: JSON.stringify(ringGraph.nodes().map(function(id){return ringGraph.node(id);})),
 			weave: weave.file,
 			units: units,
 			edgeRings: JSON.stringify(Array.from(edgeRings, function(ring) {return ring.nodeID;})),

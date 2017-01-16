@@ -22,12 +22,13 @@ import (
 var destAcct = "jared.hays@gmail.com"
 
 type Sheet struct {
-	Data      []byte    `datastore:",noindex" json:"-"`
-	Graph     string    `datastore:"-,noindex" json:"graph"`
+	RingData      []byte    `datastore:",noindex" json:"-"`
+	Rings     string    `datastore:"-,noindex" json:"rings"`
 	Author    string    `json:"author"`
 	AuthorID  string    `json:"authorID"`
 	Units     string    `datastore:",noindex" json:"units"`
-	EdgeRings []string  `datastore:",noindex" json:"edgeRings"`
+	EdgeData  []byte	`datastore:",noindex" json:"-"`
+	EdgeRings string  `datastore:"-,noindex" json:"edgeRings"`
 	Weave     string    `json:"weave"`
 	Created   time.Time `json:"created"`
 	Updated   time.Time `json:"updated"`
@@ -35,10 +36,10 @@ type Sheet struct {
 
 func (orig *Sheet) Clone() *Sheet {
 	var sheet = &Sheet{
-		Data:      orig.Data,
+		RingData:      orig.RingData,
 		Units:     orig.Units,
 		Weave:     orig.Weave,
-		EdgeRings: orig.EdgeRings,
+		EdgeData: orig.EdgeData,
 		Created:   orig.Created,
 		Updated:   orig.Updated,
 		Author:    orig.Author,
@@ -56,28 +57,58 @@ func (sheet *Sheet) zipGraph() error {
 	buffer := new(bytes.Buffer)
 	gz := gzip.NewWriter(buffer)
 
-	if _, err := gz.Write([]byte(sheet.Graph)); err != nil {
+	if _, err := gz.Write([]byte(sheet.Rings)); err != nil {
 		return err
 	}
 	gz.Close()
 
-	sheet.Data = buffer.Bytes()
+	sheet.RingData = buffer.Bytes()
+	
+	buffer = new(bytes.Buffer)
+	gz = gzip.NewWriter(buffer)
+
+	if _, err := gz.Write([]byte(sheet.EdgeRings)); err != nil {
+		return err
+	}
+	gz.Close()
+
+	sheet.EdgeData = buffer.Bytes()
+	
+	// gz.Close()
+	
 	return nil
 }
 
-func (sheet *Sheet) unzipGraph() error {
+func (sheet *Sheet) unzipGraph(ctxt context.Context) error {
 	buffer := new(bytes.Buffer)
-	gz, err := gzip.NewReader(bytes.NewReader(sheet.Data))
+	gz, err := gzip.NewReader(bytes.NewReader(sheet.RingData))
+	if err != nil {
+		return err
+	}
+
+		log.Debugf(ctxt, "Rings length: %v", len(sheet.RingData))
+	if _, err := buffer.ReadFrom(gz); err != nil {
+		log.Errorf(ctxt, "Error unzipping rings: "+err.Error())
+		return err
+	}
+
+	sheet.Rings = buffer.String()
+	
+	buffer = new(bytes.Buffer)
+	gz, err = gzip.NewReader(bytes.NewReader(sheet.EdgeData))
 	if err != nil {
 		return err
 	}
 
 	if _, err := buffer.ReadFrom(gz); err != nil {
+		log.Errorf(ctxt, "Error unzipping edge: "+err.Error())
 		return err
 	}
-	gz.Close()
 
-	sheet.Graph = buffer.String()
+	sheet.EdgeRings = buffer.String()
+	
+	gz.Close()
+	
 	return nil
 }
 
@@ -159,13 +190,13 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	var key *datastore.Key
 	var sheet *Sheet
 
-	var edgeRings []string
-	err = json.Unmarshal([]byte(req.PostFormValue("edgeRings")), &edgeRings)
-	if err != nil {
-		log.Errorf(ctxt, "Error parsing sheet data: "+err.Error())
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// var edgeRings []string
+	// err = json.Unmarshal([]byte(req.PostFormValue("edgeRings")), &edgeRings)
+	// if err != nil {
+		// log.Errorf(ctxt, "Error parsing sheet data: "+err.Error())
+		// http.Error(resp, err.Error(), http.StatusInternalServerError)
+		// return
+	// }
 
 	// buffer := new(bytes.Buffer)
 	// gz := gzip.NewWriter(buffer)
@@ -200,11 +231,11 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 		sheet.Created = time.Now()
 	}
 
-	sheet.Graph = req.PostFormValue("graph")
+	sheet.Rings = req.PostFormValue("rings")
 	// sheet.Data = buffer.Bytes()
 	sheet.Units = req.PostFormValue("units")
 	sheet.Weave = req.PostFormValue("weave")
-	sheet.EdgeRings = edgeRings
+	sheet.EdgeRings = req.PostFormValue("edgeRings")
 	sheet.Updated = time.Now()
 	sheet.Author = email
 	sheet.AuthorID = id
@@ -249,7 +280,7 @@ func loadSheet(resp http.ResponseWriter, req *http.Request) {
 	// }
 	// gz.Close()
 
-	if err := sheet.unzipGraph(); err != nil {
+	if err := sheet.unzipGraph(ctxt); err != nil {
 		log.Errorf(ctxt, "Error unzipping graph: "+err.Error())
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
 	}
