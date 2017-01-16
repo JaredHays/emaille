@@ -4,8 +4,10 @@
 <head>
 <title>e-maille - Chainmaille inlay editor</title>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="google-signin-client_id" content="923708408506-btjant3mf0mo0sjvtnjejc3h609kk8la.apps.googleusercontent.com">
 <link rel="stylesheet" type="text/css" href="/style/maille.css" />
 <link rel="stylesheet" type="text/css" href="/style/featherlight.min.css" />
+<script src="https://apis.google.com/js/platform.js" async defer></script>
 <script type="text/javascript" src="https://use.fontawesome.com/65e3673d8d.js"></script>
 <script type="text/javascript" src="/script/jquery-2.2.3.min.js"></script>
 <script type="text/javascript" src="/script/jquery-ui.min.js"></script>
@@ -41,7 +43,11 @@
 		</div>
 		
 		<div id="control-panel" class="row two columns">
-			<input type="button" id="save-button" value="Save" />
+			<div id="save-div">
+				<div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+				<!-- <span id="email-span"></span> -->
+				<input type="button" id="save-button" value="Save" disabled />
+			</div>
 			<div id="units-div" class="row bordered-div">
 				<h4>Units</h4>
 				<div id="units-inner-div">

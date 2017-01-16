@@ -10,13 +10,13 @@
  * Suppress initial weave creation
  * Canvas renderer?
  * Hide scroll bar on control panel, up/down arrows on slider bounds in FF
- * Rotate sheet (camera) 90(?) deg (save rotation?)
  * Position updating broken on Japanese weaves
  * Alpha getting changed with brush/undo when some rings are on and others off
  * Unsaved changes warning on page leave
  */
 
 var key;
+var authorID;
 
 var renderer = null;
 var scene = null;
@@ -66,6 +66,9 @@ var previousTool;
 var commandQueue = [];
 var commandIndex = 0;
 
+var userID;
+var id_token;
+
 var envSettings = $.extend({
 	logPerformance: false,
 	host: "https://e-maille.appspot.com/",
@@ -100,8 +103,29 @@ function run() {
 	renderer.render(scene, camera);
 }
 
-function start() {
-    $("#weave").on("change", function(e) {
+function onSignIn(googleUser) {
+	// Useful data for your client-side scripts:
+	var profile = googleUser.getBasicProfile();
+	userID = profile.getId();
+	// console.log("ID: " + profile.getId()); // Don't send this directly to your server!
+	// console.log('Full Name: ' + profile.getName());
+	// console.log('Given Name: ' + profile.getGivenName());
+	// console.log('Family Name: ' + profile.getFamilyName());
+	// console.log("Image URL: " + profile.getImageUrl());
+	// console.log("Email: " + profile.getEmail());
+
+	// The ID token you need to pass to your backend:
+	id_token = googleUser.getAuthResponse().id_token;
+	// console.log("ID Token: " + id_token);
+	
+	// Sheet data is done loading
+	updateSaveButton();
+	$("div.g-signin2").text("Signed in as: " + profile.getEmail());
+	$("div.abcRioButton").css("display", "none");
+};
+
+function chooseWeave() {
+	$(document).on("change", "#weave", function(e) {
     	if(!$(this).val()) {
     		e.preventDefault();
     		return;
@@ -109,21 +133,34 @@ function start() {
     	
 		$("div#weave-select").html("Loading weave...");
     	
+		var weaveFile = $(this).val();
     	$.ajax({
-			url: envSettings.useLocalData ? "/data/weave/" + $(this).val() : envSettings.host + "/data/getweave?name=" + $(this).val(),
+			url: envSettings.useLocalData ? "/data/weave/" + weaveFile : envSettings.host + "/data/getweave?name=" + weaveFile,
 			dataType: "json",
 			success: function(data) {
 				$.featherlight.close();
-				$("div#weave-select").remove();
+				// $("div#weave-select");
 				weave = data;
+				weave.file = weaveFile;
 				setupWeave();
 			}
 		});
     });
-    $.featherlight($("div#weave-select").css("display", "block"), {
+    $.featherlight($("div#weave-select").css("display", "block").remove(), {
     	closeOnClick: false,
     	closeOnEsc: false
     });
+}
+
+function updateSaveButton() {
+	// Wait for sheet data (if given a key) and user data
+	if((key && !authorID) || !userID)
+		return;
+	
+	$("#save-button").attr("disabled", false);
+	if(key && authorID !== userID) {
+		$("#save-button").attr("value", "Save a copy");
+	}
 }
 
 /**
@@ -185,14 +222,12 @@ function loadStaticData() {
 				var weave = weaves[i];
 				weaveList.append("<option value='" + weave.file + "'>" + weave.name + "</option>");
 			}
-			start();
 			
 			// Load sheet data if a key is specified
-			var split = window.location.pathname.split("/").filter(s => s);
-			if(split.length > 1)
-				key = split[1]
 			if(key)
 				loadSheetData(key);
+			else
+				chooseWeave();
 		});
 	}
 	else {
@@ -241,29 +276,39 @@ function loadSheetData(key) {
 			edgeRings = new Set();
 			geometryUpdates = new Set();
 			
-			// Delete all children except camera and lights
-			for(var i = scene.children.length - 1; i >= 0; i--) {
-				if(!(scene.children[i] instanceof THREE.Camera) && !(scene.children[i] instanceof THREE.Light)) {
-					scene.remove(scene.children[i]);
-				}
-			}
-			
 			data = JSON.parse(data);
 			
-			var parsedGraph = JSON.parse(data.Graph);
-			for(var nodeID in parsedGraph._nodes) {
-				var ring = new Ring(parsedGraph._nodes[nodeID]);
-				ring.mesh.position.copy(parsedGraph._nodes[nodeID].position);
-				ring.mesh.rotation.copy(parsedGraph._nodes[nodeID].rotation);
-				ring.changeColor(parsedGraph._nodes[nodeID].color);
-			}
-			if(units !== data.Units) {
-				units = data.Units;
-				changeUnits();
-			}
-			for(var nodeID of data.EdgeRings) {
-				edgeRings.add(ringGraph.node(nodeID));
-			}
+			authorID = data.authorID;
+			
+			// Load the weave
+			$.ajax({
+				url: envSettings.useLocalData ? "/data/weave/" + data.weave : envSettings.host + "/data/getweave?name=" + data.weave,
+				dataType: "json",
+				success: function(weaveData) {
+					weave = weaveData;
+					weave.file = data.weave;
+					setupWeave();
+					createRings();
+					
+					var parsedGraph = JSON.parse(data.graph);
+					for(var node of parsedGraph) {
+						var ring = new Ring(node);
+						ring.mesh.position.copy(node.position);
+						ring.mesh.rotation.copy(node.rotation);
+						ring.changeColor(node.color);
+					}
+					if(units !== data.units) {
+						units = data.units;
+						changeUnits();
+					}
+					for(var nodeID of data.edgeRings) {
+						edgeRings.add(ringGraph.node(nodeID));
+					}
+					
+					updateSaveButton();
+				}
+			});
+			
 		},
 		error: function(data) {
 			console.log(data);
@@ -979,7 +1024,6 @@ function print() {
 	for(var nodeID of ringGraph.nodes()) {
 		var ring = ringGraph.node(nodeID);
 		var color = "#" + ring.mesh.material.color.getHexString();
-		console.log(color);
 		
 		if(!(color in lambertMaterials)) {
 			lambertMaterials[color] = new THREE.MeshLambertMaterial({color: color});
@@ -1022,13 +1066,22 @@ function print() {
 	// Create window for print image
 	var windowContent = '<!DOCTYPE html>';
     windowContent += '<html>';
-    windowContent += '<head><title>Print canvas</title></head>';
+    windowContent += '<head><title>Print canvas</title>'
+	windowContent += '<style type="text/css">'
+	windowContent += '\tp {'
+	windowContent += '\t\tfont-size: 1rem;'; 
+	windowContent += '\t\tfont-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;'; 
+	windowContent += '\t\tcolor: #222;';
+	windowContent += '\t}';
+	windowContent += '</style>';
+	windowContent += '</head>';
     windowContent += '<body>';
     windowContent += '<img src="' + data + '">';
+	windowContent += '<p>Generated by e-maille: e-maille.appspot.com</p>';
     windowContent += '</body>';
     windowContent += '</html>';
     try {
-		var printWin = window.open('','','width=340,height=260');
+		var printWin = window.open('', '', 'width=' + $(window).width(), 'height=' + $(window).height());
 		printWin.document.open();
 		printWin.document.write(windowContent);
 		printWin.document.close();
@@ -1037,6 +1090,7 @@ function print() {
 		printWin.close();
 	}
 	catch(error) {
+		console.log(error);
 		alert("There was an error printing your sheet: \n" + error);
 	}
 	
@@ -1091,8 +1145,8 @@ function updateRingStats() {
 		var values;
 		if(!Object.values) {
 			values = [];
-			for(var count of Ring.colorCounts[geometryIndex]) {
-				values.push(count);
+			for(var color in Ring.colorCounts[geometryIndex]) {
+				values.push(Ring.colorCounts[geometryIndex][color]);
 			}
 		}
 		else {
@@ -1473,17 +1527,26 @@ $(document).ready(function() {
 	$("#save-button").click(function(e) {
 		e.preventDefault();
 		$.post("/datastore/save", {
-			graph: JSON.stringify(ringGraph),
-			weave: weave.name,
+			graph: JSON.stringify(ringGraph.nodes().map(function(id){return ringGraph.node(id);})),
+			weave: weave.file,
 			units: units,
 			edgeRings: JSON.stringify(Array.from(edgeRings, function(ring) {return ring.nodeID;})),
-            key: key ? key : ""
+            key: key ? key : "",
+			id_token: id_token
 		}, function(data) {
 			console.log(data);
             if(!window.location.pathname.endsWith(data))
-    			window.location.pathname += data
+				if(window.location.pathname.endsWith(key))
+					window.location.pathname = window.location.pathname.replace(key, data);
+				else
+					window.location.pathname += data
 		});
 	});
+	
+	// Parse out key if one exists
+	var split = window.location.pathname.split("/").filter(s => s);
+	if(split.length > 1)
+		key = split[1]
 	
 	loadStaticData();
 

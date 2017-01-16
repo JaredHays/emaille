@@ -14,18 +14,37 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/user"
+	"google.golang.org/appengine/mail"
+	"google.golang.org/appengine/urlfetch"
 )
 
+// var serviceAcct = "e-maille@appspot.gserviceaccount.com"
+var destAcct = "jared.hays@gmail.com"
+
 type Sheet struct {
-	Data      []byte `datastore:",noindex"`
-	Graph     string `datastore:"-,noindex"`
-	Author    string
-	Units     string   `datastore:",noindex"`
-	EdgeRings []string `datastore:",noindex"`
-	Weave     string
-	Created   time.Time
-	Updated   time.Time
+	Data      []byte    `datastore:",noindex" json:"-"`
+	Graph     string    `datastore:"-,noindex" json:"graph"`
+	Author    string    `json:"author"`
+	AuthorID  string    `json:"authorID"`
+	Units     string    `datastore:",noindex" json:"units"`
+	EdgeRings []string  `datastore:",noindex" json:"edgeRings"`
+	Weave     string    `json:"weave"`
+	Created   time.Time `json:"created"`
+	Updated   time.Time `json:"updated"`
+}
+
+func (orig *Sheet) Clone() *Sheet {
+	var sheet = &Sheet{
+		Data:      orig.Data,
+		Units:     orig.Units,
+		Weave:     orig.Weave,
+		EdgeRings: orig.EdgeRings,
+		Created:   orig.Created,
+		Updated:   orig.Updated,
+		Author:    orig.Author,
+		AuthorID:  orig.AuthorID,
+	}
+	return sheet
 }
 
 func (sheet *Sheet) String() string {
@@ -33,12 +52,37 @@ func (sheet *Sheet) String() string {
 	return string(json)
 }
 
+func (sheet *Sheet) zipGraph() error {
+	buffer := new(bytes.Buffer)
+	gz := gzip.NewWriter(buffer)
+
+	if _, err := gz.Write([]byte(sheet.Graph)); err != nil {
+		return err
+	}
+	gz.Close()
+
+	sheet.Data = buffer.Bytes()
+	return nil
+}
+
+func (sheet *Sheet) unzipGraph() error {
+	buffer := new(bytes.Buffer)
+	gz, err := gzip.NewReader(bytes.NewReader(sheet.Data))
+	if err != nil {
+		return err
+	}
+
+	if _, err := buffer.ReadFrom(gz); err != nil {
+		return err
+	}
+	gz.Close()
+
+	sheet.Graph = buffer.String()
+	return nil
+}
+
 func init() {
 	http.HandleFunc("/maille/", func(resp http.ResponseWriter, req *http.Request) {
-		ctxt := appengine.NewContext(req)
-		if u := user.Current(ctxt); u == nil {
-			log.Infof(ctxt, "nil user")
-		}
 		http.ServeFile(resp, req, "./www/index.html")
 	})
 	http.HandleFunc("/contact.html", func(resp http.ResponseWriter, req *http.Request) {
@@ -53,9 +97,27 @@ func init() {
 func contact(resp http.ResponseWriter, req *http.Request) {
 	ctxt := appengine.NewContext(req)
 
-	log.Infof(ctxt, "type: "+req.FormValue("type"))
-	log.Infof(ctxt, req.FormValue("subject"))
-	log.Infof(ctxt, req.FormValue("body"))
+	log.Infof(ctxt, "type: "+req.PostFormValue("type"))
+	log.Infof(ctxt, req.PostFormValue("subject"))
+	log.Infof(ctxt, req.PostFormValue("body"))
+
+	serviceAcct, err := appengine.ServiceAccount(ctxt)
+	if err != nil {
+		log.Errorf(ctxt, "Couldn't send email: %v", err)
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+	}
+
+	msg := &mail.Message{
+		Sender:  fmt.Sprintf("e-maille <%s>", serviceAcct),
+		To:      []string{destAcct},
+		Subject: fmt.Sprintf("%s - %s", req.PostFormValue("type"), req.PostFormValue("subject")),
+		Body:    req.PostFormValue("body"),
+	}
+
+	if err := mail.Send(ctxt, msg); err != nil {
+		log.Errorf(ctxt, "Couldn't send email: %v", err)
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func getWires(resp http.ResponseWriter, req *http.Request) {
@@ -70,53 +132,91 @@ func getWires(resp http.ResponseWriter, req *http.Request) {
 func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	ctxt := appengine.NewContext(req)
 
+	// Check user token from JavaScript auth
+	client := urlfetch.Client(ctxt)
+	fetch, err := client.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=" + req.PostFormValue("id_token"))
+	if err != nil {
+		log.Errorf(ctxt, "Error validating user token: "+err.Error())
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var fetchJSON interface{}
+	err = json.NewDecoder(fetch.Body).Decode(&fetchJSON)
+	if err != nil {
+		log.Errorf(ctxt, "Error parsing authentication response: "+err.Error())
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fetchMap := fetchJSON.(map[string]interface{})
+	if fetchMap["sub"] == nil || fetchMap["email"] == nil {
+		log.Errorf(ctxt, "Empty authentication response")
+		http.Error(resp, "Empty authentication response", http.StatusInternalServerError)
+		return
+	}
+	id := fetchMap["sub"].(string)
+	email := fetchMap["email"].(string)
+
 	var key *datastore.Key
 	var sheet *Sheet
 
 	var edgeRings []string
-	json.Unmarshal([]byte(req.FormValue("edgeRings")), &edgeRings)
-
-	buffer := new(bytes.Buffer)
-	gz := gzip.NewWriter(buffer)
-
-	if _, err := gz.Write([]byte(req.FormValue("graph"))); err != nil {
-		log.Errorf(ctxt, err.Error())
+	err = json.Unmarshal([]byte(req.PostFormValue("edgeRings")), &edgeRings)
+	if err != nil {
+		log.Errorf(ctxt, "Error parsing sheet data: "+err.Error())
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	defer gz.Close()
 
-	keyString := req.FormValue("key")
+	// buffer := new(bytes.Buffer)
+	// gz := gzip.NewWriter(buffer)
+
+	// if _, err := gz.Write([]byte(req.FormValue("graph"))); err != nil {
+	// log.Errorf(ctxt, "Error zipping graph: "+err.Error())
+	// http.Error(resp, err.Error(), http.StatusInternalServerError)
+	// }
+	// gz.Close()
+
+	keyString := req.PostFormValue("key")
 
 	// Existing sheet, attempt to locate and update
 	if keyString != "" {
-		log.Debugf(ctxt, "Updating sheet")
 		var err error
 		key, sheet, err = loadSheetFromDB(ctxt, fromBase62(keyString))
 		if err != nil {
 			log.Errorf(ctxt, "Error updating sheet: "+err.Error())
-		} else {
-			sheet.Data = buffer.Bytes()
-			sheet.Units = req.FormValue("units")
-			sheet.EdgeRings = edgeRings
-			sheet.Updated = time.Now()
-			log.Debugf(ctxt, "Updated?: %v", sheet.Updated)
+			http.Error(resp, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Different author, save as new sheet
+		if id != sheet.AuthorID {
+			key = datastore.NewIncompleteKey(ctxt, "Sheet", nil)
+			sheet = sheet.Clone()
 		}
 	} else {
+		// New sheet
 		key = datastore.NewIncompleteKey(ctxt, "Sheet", nil)
-		sheet = &Sheet{
-			Data:      buffer.Bytes(),
-			Units:     req.FormValue("units"),
-			Weave:     req.FormValue("weave"),
-			EdgeRings: edgeRings,
-			Created:   time.Now(),
-			Updated:   time.Now(),
-		}
-
-		if u := user.Current(ctxt); u != nil {
-			sheet.Author = u.String()
-		}
+		sheet = new(Sheet)
+		sheet.Created = time.Now()
 	}
 
-	key, err := datastore.Put(ctxt, key, sheet)
+	sheet.Graph = req.PostFormValue("graph")
+	// sheet.Data = buffer.Bytes()
+	sheet.Units = req.PostFormValue("units")
+	sheet.Weave = req.PostFormValue("weave")
+	sheet.EdgeRings = edgeRings
+	sheet.Updated = time.Now()
+	sheet.Author = email
+	sheet.AuthorID = id
+
+	if err := sheet.zipGraph(); err != nil {
+		log.Errorf(ctxt, "Error zipping graph: "+err.Error())
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+	}
+
+	// log.Debugf(ctxt, "Length saving: %d", len(req.FormValue("graph")))
+
+	key, err = datastore.Put(ctxt, key, sheet)
 
 	if err != nil {
 		log.Errorf(ctxt, "Error saving sheet: "+err.Error())
@@ -125,13 +225,12 @@ func saveSheet(resp http.ResponseWriter, req *http.Request) {
 	}
 	log.Debugf(ctxt, fmt.Sprintf("%d", key.IntID()))
 	resp.Write([]byte(toBase62(key.IntID())))
-	// http.Redirect(resp, req, "/maille/", http.StatusFound)
 }
 
 func loadSheet(resp http.ResponseWriter, req *http.Request) {
 	ctxt := appengine.NewContext(req)
 
-	log.Debugf(ctxt, strconv.FormatInt(fromBase62(req.FormValue("key")), 10))
+	log.Debugf(ctxt, "Loading key: "+strconv.FormatInt(fromBase62(req.FormValue("key")), 10))
 
 	_, sheet, err := loadSheetFromDB(ctxt, fromBase62(req.FormValue("key")))
 	if err != nil {
@@ -139,19 +238,26 @@ func loadSheet(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	buffer := new(bytes.Buffer)
-	gz, err := gzip.NewReader(bytes.NewReader(sheet.Data))
-	if err != nil {
-		log.Errorf(ctxt, "107: "+err.Error())
+	// buffer := new(bytes.Buffer)
+	// gz, err := gzip.NewReader(bytes.NewReader(sheet.Data))
+	// if err != nil {
+	// log.Errorf(ctxt, "Error creating zipper: "+err.Error())
+	// }
+
+	// if _, err := buffer.ReadFrom(gz); err != nil {
+	// log.Errorf(ctxt, "Error reading from zipper: "+err.Error())
+	// }
+	// gz.Close()
+
+	if err := sheet.unzipGraph(); err != nil {
+		log.Errorf(ctxt, "Error unzipping graph: "+err.Error())
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
 	}
 
-	if _, err := buffer.ReadFrom(gz); err != nil {
-		log.Errorf(ctxt, "111: "+err.Error())
-	}
-	defer gz.Close()
-
-	sheet.Data = make([]byte, 0)
-	sheet.Graph = buffer.String()
+	// log.Debugf(ctxt, "Data length loading: %d", len(sheet.Data))
+	// sheet.Data = make([]byte, 0)
+	// sheet.Graph = buffer.String()
+	// log.Debugf(ctxt, "Graph length loading: %d", len(sheet.Graph))
 
 	json, err := json.Marshal(sheet)
 	if err != nil {
