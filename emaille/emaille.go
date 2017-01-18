@@ -120,6 +120,7 @@ func init() {
 	http.HandleFunc("/data/getwires", getWires)
 	http.HandleFunc("/datastore/load", loadSheet)
 	http.HandleFunc("/datastore/save", saveSheet)
+	http.Handle("/", http.RedirectHandler("/maille/", http.StatusFound))
 }
 
 func contact(resp http.ResponseWriter, req *http.Request) {
@@ -127,19 +128,20 @@ func contact(resp http.ResponseWriter, req *http.Request) {
 
 	log.Infof(ctxt, "type: "+req.PostFormValue("type"))
 	log.Infof(ctxt, req.PostFormValue("subject"))
+	log.Infof(ctxt, req.PostFormValue("email"))
 	log.Infof(ctxt, req.PostFormValue("body"))
 
-	serviceAcct, err := appengine.ServiceAccount(ctxt)
-	if err != nil {
-		log.Errorf(ctxt, "Couldn't send email: %v", err)
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-	}
+	// serviceAcct, err := appengine.ServiceAccount(ctxt)
+	// if err != nil {
+		// log.Errorf(ctxt, "Couldn't send email: %v", err)
+		// http.Error(resp, err.Error(), http.StatusInternalServerError)
+	// }
 
 	msg := &mail.Message{
-		Sender:  fmt.Sprintf("e-maille <%s>", serviceAcct),
+		Sender:  fmt.Sprintf("e-maille <%s>", destAcct),
 		To:      []string{destAcct},
-		Subject: fmt.Sprintf("%s - %s", req.PostFormValue("type"), req.PostFormValue("subject")),
-		Body:    req.PostFormValue("body"),
+		Subject: fmt.Sprintf("[e-maille] %s - %s", req.PostFormValue("type"), req.PostFormValue("subject")),
+		Body:    fmt.Sprintf("From: %s\n\n%s", req.PostFormValue("email"), req.PostFormValue("body")),
 	}
 
 	if err := mail.Send(ctxt, msg); err != nil {

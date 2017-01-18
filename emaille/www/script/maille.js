@@ -72,8 +72,9 @@ var id_token;
 var envSettings = $.extend({
 	logPerformance: false,
 	host: "https://e-maille.appspot.com/",
+	useLocalData: true
 	// gcs: "https://www.googleapis.com/storage/v1/b/e-maille.appspot.com/"
-}, localEnvSettings ? localEnvSettings : {});
+}, typeof localEnvSettings !== "undefined" ? localEnvSettings : {});
 
 Math.clamp = function(num, min, max) {
   return Math.min(Math.max(num, min), max);
@@ -232,7 +233,7 @@ function loadStaticData() {
 	}
 	else {
 		$.ajax({
-			url: envSettings.host + "/data/getwires",
+			url: envSettings.host + "data/getwires",
 			dataType: "json",
 			success: function(data) {
 				for(var i = 0; i < data.length; i++) {
@@ -241,7 +242,7 @@ function loadStaticData() {
 				}
 				setupRingDivs();
 				$.ajax({
-					url: envSettings.host + "/data/getweaveslist",
+					url: envSettings.host + "data/getweaveslist",
 					dataType: "json",
 					success: function(data) {
 						var weaveList = $("#weave");						

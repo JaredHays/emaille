@@ -3,17 +3,18 @@ runtime: go
 api_version: go1
 
 handlers:
-- url: /data/wire
-  static_dir: www/data/wire
-  application_readable: true
+- url: /data/wire/(.*\.json)
+  static_files: www/data/wire/\1
+  upload: www/data/wire/(.*\.json)
+  mime_type: application/json
   
-- url: /data/weave
-  static_dir: www/data/weave
-  application_readable: true
+- url: /data/weave/(.*\.json)
+  static_files: www/data/weave/\1
+  upload: www/data/weave/(.*\.json)
+  mime_type: application/json
   
 - url: /data
   static_dir: www/data
-  application_readable: true  
   
 - url: /style
   static_dir: www/style
@@ -23,3 +24,12 @@ handlers:
   
 - url: /.*
   script: _go_app
+  secure: always
+  
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+- ^(.*/)?localenv.js$
