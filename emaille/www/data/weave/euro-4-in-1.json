@@ -1,0 +1,127 @@
+{
+	"name": "European 4-in-1",
+	"geometries": [
+		{
+			"minAR": 2.9
+		}
+	],
+	"rings": [
+		{
+			"geometry": 0,
+			"rotation": -36,
+			"base": true
+		},
+		{
+			"geometry": 0,
+			"rotation": 36
+		}
+	],
+	"values": {
+		"fullOffset": 1.1,
+		"leftOffset": -0.7,
+		"rightOffset": 0.4
+	},
+	"structure": {
+		"base": {
+			"base": true,
+			"ring": 0,
+			"pos": {"x": 0, "y": 0},
+			"links": [
+				"top-left",
+				"top-right",
+				"bottom-right",
+				"bottom-left",
+				"left",
+				"right",
+				"top",
+				"bottom"
+			]
+		},
+		"top-left": {
+			"ring": 1,
+			"pos": {"x": "leftOffset", "y": "fullOffset"}
+		},
+		"top-right": {
+			"ring": 1,
+			"pos": {"x": "rightOffset", "y": "fullOffset"}
+		},
+		"bottom-right": {
+			"ring": 1,
+			"pos": {"x": "rightOffset", "y": "-fullOffset"}
+		},
+		"bottom-left": {
+			"ring": 1,
+			"pos": {"x": "leftOffset", "y": "-fullOffset"}
+		},
+		"left": {
+			"ring": 0,
+			"pos": {"x": "-fullOffset", "y": 0},
+			"links": [
+				{"id": "top-left", "as": "top-right"},
+				{"id": "bottom-left", "as": "bottom-right"},
+				{"id": "base", "as": "right"}
+			]
+		},
+		"right": {
+			"ring": 0,
+			"pos": {"x": "fullOffset", "y": 0},
+			"links": [
+				{"id": "top-right", "as": "top-left"},
+				{"id": "bottom-right", "as": "bottom-left"},
+				{"id": "base", "as": "left"}
+			]
+		},
+		"top": {
+			"ring": 0,
+			"pos": {"x": 0, "y": "fullOffset * 2"},
+			"links": [
+				{"id": "top-right", "as": "bottom-right"},
+				{"id": "top-left", "as": "bottom-left"},
+				{"id": "base", "as": "bottom"}
+			]
+		},
+		"bottom": {
+			"ring": 0,
+			"pos": {"x": 0, "y": "-fullOffset * 2"},
+			"links": [
+				{"id": "bottom-left", "as": "top-left"},
+				{"id": "bottom-right", "as": "top-right"},
+				{"id": "base", "as": "top"}
+			]
+		}
+	},
+	"linkPaths": {
+		"left": [
+			["top", "left", "bottom"],
+			["bottom", "left", "top"]
+		],
+		"right": [
+			["top", "right", "bottom"],
+			["bottom", "right", "top"]
+		],
+		"top": [
+			["right", "top", "left"],
+			["left", "top", "right"]
+		],
+		"bottom": [
+			["right", "bottom", "left"],
+			["left", "bottom", "right"]
+		],
+		"top-left": [
+			["left", "top-right"],
+			["top", "bottom-left"]
+		],
+		"top-right": [
+			["right", "top-left"],
+			["top", "bottom-right"]
+		],
+		"bottom-right": [
+			["right", "bottom-left"],
+			["bottom", "top-right"]
+		],
+		"bottom-left": [
+			["left", "bottom-right"],
+			["bottom", "top-left"]
+		]
+	}
+}

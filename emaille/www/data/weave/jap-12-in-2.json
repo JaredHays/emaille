@@ -1,0 +1,282 @@
+{
+	"name": "Japanese 12-in-2",
+	"geometries": [
+		{
+			"minAR": 2.9,
+			"defaults": {
+				"wireSystem": "AWG",
+				"wireGauge": 16,
+				"innerDiameter": 0.75
+			}
+		},
+		{
+			"minAR": 2.9,
+			"defaults": {
+				"wireSystem": "SWG",
+				"wireGauge": 16,
+				"innerDiameter": 0.5
+			}
+		}
+	],
+	"rings": [
+		{
+			"geometry": 0,
+			"rotation": 0,
+			"base": true
+		},
+		{
+			"geometry": 1,
+			"rotation": 90
+		}
+	],
+	"values": {
+		"radius": 1.5,
+		"offsetAngle": 5,
+		"largeOffset": 1.5
+	},
+	"structure": {
+		"base": {
+			"base": true,
+			"ring": 0,
+			"pos": {"x": 0, "y": 0},
+			"links": [
+				"small-00",
+				"small-01",
+				"small-10",
+				"small-11",
+				"small-20",
+				"small-21",
+				"small-30",
+				"small-31",
+				"small-40",
+				"small-41",
+				"small-50",
+				"small-51",
+				"large-0",
+				"large-1",
+				"large-2",
+				"large-3",
+				"large-4",
+				"large-5"
+			]
+		},
+		"small-00": {
+			"ring": 1,
+			"values": {"base": 90, "deg": "base + offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-01": {
+			"ring": 1,
+			"values": {"base": 90, "deg": "base - offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-10": {
+			"ring": 1,
+			"values": {"base": 30, "deg": "base + offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-11": {
+			"ring": 1,
+			"values": {"base": 30, "deg": "base - offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-20": {
+			"ring": 1,
+			"values": {"base": -30, "deg": "base + offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-21": {
+			"ring": 1,
+			"values": {"base": -30, "deg": "base - offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-30": {
+			"ring": 1,
+			"values": {"base": -90, "deg": "base + offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-31": {
+			"ring": 1,
+			"values": {"base": -90, "deg": "base - offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-40": {
+			"ring": 1,
+			"values": {"base": -150, "deg": "base + offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-41": {
+			"ring": 1,
+			"values": {"base": -150, "deg": "base - offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-50": {
+			"ring": 1,
+			"values": {"base": 150, "deg": "base + offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"small-51": {
+			"ring": 1,
+			"values": {"base": 150, "deg": "base - offsetAngle", "rad": "deg * PI / 180"},
+			"pos": {"x": "radius * cos(rad)", "y": "radius * sin(rad)", "z": 0.5},
+			"rot": {"z": "base - 90"}
+		},
+		"large-0": {
+			"ring": 0,
+			"values": {"deg": 90, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
+			"links": [
+				{"id": "small-00", "as": "small-31"},
+				{"id": "small-01", "as": "small-30"},
+				{"id": "base", "as": "large-3"}
+			]
+		},
+		"large-1": {
+			"ring": 0,
+			"values": {"deg": 30, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
+			"links": [
+				{"id": "small-10", "as": "small-41"},
+				{"id": "small-11", "as": "small-40"},
+				{"id": "base", "as": "large-4"}
+			]
+		},
+		"large-2": {
+			"ring": 0,
+			"values": {"deg": -30, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
+			"links": [
+				{"id": "small-20", "as": "small-51"},
+				{"id": "small-21", "as": "small-50"},
+				{"id": "base", "as": "large-5"}
+			]
+		},
+		"large-3": {
+			"ring": 0,
+			"values": {"deg": -90, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
+			"links": [
+				{"id": "small-30", "as": "small-01"},
+				{"id": "small-31", "as": "small-00"},
+				{"id": "base", "as": "large-0"}
+			]
+		},
+		"large-4": {
+			"ring": 0,
+			"values": {"deg": -150, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
+			"links": [
+				{"id": "small-40", "as": "small-11"},
+				{"id": "small-41", "as": "small-10"},
+				{"id": "base", "as": "large-1"}
+			]
+		},
+		"large-5": {
+			"ring": 0,
+			"values": {"deg": 150, "rad": "deg * PI / 180"},
+			"pos": {"x": "largeOffset * radius * cos(rad)", "y": "largeOffset * radius * sin(rad)"},
+			"links": [
+				{"id": "small-50", "as": "small-21"},
+				{"id": "small-51", "as": "small-20"},
+				{"id": "base", "as": "large-2"}
+			]
+		}
+	},
+	"linkPaths": {
+		"large-0": [
+			["large-5", "large-1"],
+			["large-1", "large-5"],
+			["large-4", "large-0", "large-1"],
+			["large-2", "large-0", "large-5"],
+			["large-1", "large-0", "large-4"],
+			["large-5", "large-0", "large-2"]
+		],
+		"large-1": [
+			["large-0", "large-2"],
+			["large-2", "large-0"],
+			["large-5", "large-1", "large-2"],
+			["large-3", "large-1", "large-0"],
+			["large-2", "large-1", "large-5"],
+			["large-0", "large-1", "large-3"]
+		],
+		"large-2": [
+			["large-1", "large-3"],
+			["large-3", "large-1"],
+			["large-0", "large-2", "large-3"],
+			["large-4", "large-2", "large-1"],
+			["large-3", "large-2", "large-0"],
+			["large-1", "large-2", "large-4"]
+		],
+		"large-3": [
+			["large-2", "large-4"],
+			["large-4", "large-2"],
+			["large-1", "large-3", "large-4"],
+			["large-5", "large-3", "large-2"],
+			["large-4", "large-3", "large-1"],
+			["large-2", "large-3", "large-5"]
+		],
+		"large-4": [
+			["large-5", "large-3"],
+			["large-3", "large-5"],
+			["large-0", "large-4", "large-3"],
+			["large-2", "large-4", "large-5"],
+			["large-3", "large-4", "large-0"],
+			["large-5", "large-4", "large-2"]
+		],
+		"large-5": [
+			["large-0", "large-4"],
+			["large-4", "large-0"],
+			["large-1", "large-5", "large-4"],
+			["large-3", "large-5", "large-0"],
+			["large-4", "large-5", "large-1"],
+			["large-0", "large-5", "large-3"]
+		],
+		"small-00": [
+			["large-0", "small-31"]
+		],
+		"small-01": [
+			["large-0", "small-30"]
+		],
+		"small-10": [
+			["large-1", "small-41"]
+		],
+		"small-11": [
+			["large-1", "small-40"]
+		],
+		"small-20": [
+			["large-2", "small-51"]
+		],
+		"small-21": [
+			["large-2", "small-50"]
+		],
+		"small-30": [
+			["large-3", "small-01"]
+		],
+		"small-31": [
+			["large-3", "small-00"]
+		],
+		"small-40": [
+			["large-4", "small-11"]
+		],
+		"small-41": [
+			["large-4", "small-10"]
+		],
+		"small-50": [
+			["large-5", "small-21"]
+		],
+		"small-51": [
+			["large-5", "small-20"]
+		]
+	}
+}

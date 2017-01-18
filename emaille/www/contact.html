@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>e-maille - Contact</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<script type="text/javascript" src="/script/jquery-2.2.3.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$("#send-button").on("click", function(e) {
+		e.preventDefault();
+		$.post("/contact", {
+				type: $("#type").val(),
+				email: $("#email").val(),
+				subject: $("#subject").val(),
+				body: $("#body").val()
+			},
+			function() {
+				$("#email").val("");
+				$("#subject").val("");
+				$("#body").val("");
+			}
+		);
+	});
+});
+</script>
+<style type="text/css">
+div#contact-div label {
+	width: 15%;
+	display: inline-block;
+	vertical-align: top;
+}
+input[type="text"], input[type="email"], textarea, select {
+	padding: 6px 0px;
+	border-radius: 4px;
+	box-shadow: none;
+	background-color: #fff;
+	border: 1px solid #D1D1D1;
+	box-sizing: border-box;
+	width: 45%;
+}
+</style>
+</head>
+
+<body>
+<div id="contact-div">
+	<h2>Contact</h2>
+	<form>
+		<label for="type">Message type: </label><select name="type" id="type">
+			<option>Bug report</option>
+			<option>Weave request</option>
+			<option>Feature request</option>
+			<option>Other</option>
+		</select><br />
+		<label for="email">Email: </label><input type="email" name="email" id="email" required></input><br />
+		<label for="subject">Subject: </label><input type="text" name="subject" id="subject" required></input><br />
+		<label for="body">Body: </label><textarea name="body" id="body" rows="3" required></textarea><br />
+		<input type="submit" id="send-button" value="Send" />
+	</form>
+</div>
+</body>
+</html>

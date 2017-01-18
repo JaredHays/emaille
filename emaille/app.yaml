@@ -1,0 +1,35 @@
+version: go
+runtime: go
+api_version: go1
+
+handlers:
+- url: /data/wire/(.*\.json)
+  static_files: www/data/wire/\1
+  upload: www/data/wire/(.*\.json)
+  mime_type: application/json
+  
+- url: /data/weave/(.*\.json)
+  static_files: www/data/weave/\1
+  upload: www/data/weave/(.*\.json)
+  mime_type: application/json
+  
+- url: /data
+  static_dir: www/data
+  
+- url: /style
+  static_dir: www/style
+  
+- url: /script
+  static_dir: www/script
+  
+- url: /.*
+  script: _go_app
+  secure: always
+  
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+- ^(.*/)?localenv.js$

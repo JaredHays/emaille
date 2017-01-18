@@ -1,0 +1,3 @@
+var localEnvSettings = {
+	useLocalData: true
+};
